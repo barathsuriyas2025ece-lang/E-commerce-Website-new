@@ -1,28 +1,57 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, Sparkles } from 'lucide-react';
+import { LogIn, Sparkles, Shield, Mail, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+const validateEmail = (emailStr) => {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(String(emailStr).toLowerCase().trim());
+};
+
 const Login = () => {
-  // Clean empty inputs (no default pre-filled text)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [successNotice, setSuccessNotice] = useState('');
   const { login, loading } = useAuth();
   const navigate = useNavigate();
+
+  const handleDemoAdmin = () => {
+    setEmail('barathsuriya.s2025ece@sece.ac.in');
+    setPassword('barath12345');
+    setError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const res = await login(email, password);
+    setSuccessNotice('');
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Strict Email Format Validation
+    if (!validateEmail(cleanEmail)) {
+      setError('Please enter a valid email address (e.g., name@domain.com)');
+      return;
+    }
+
+    if (password.length < 5) {
+      setError('Password must be at least 5 characters long');
+      return;
+    }
+
+    const res = await login(cleanEmail, password);
     if (res.success) {
-      if (res.user?.role === 'admin' || email.toLowerCase().includes('admin')) {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/');
-      }
+      setSuccessNotice(`📧 Sign-in confirmation email dispatched to ${cleanEmail}`);
+      setTimeout(() => {
+        if (res.user?.role === 'admin' || cleanEmail.includes('admin') || cleanEmail === 'barathsuriya.s2025ece@sece.ac.in') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/');
+        }
+      }, 1000);
     } else {
-      setError(res.message);
+      setError(res.message || 'Authentication failed. Please check your credentials.');
     }
   };
 
@@ -37,7 +66,19 @@ const Login = () => {
           <p className="text-xs text-slate-500">Enter your email and password below</p>
         </div>
 
-        {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg font-medium">{error}</div>}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl font-medium flex items-center gap-2">
+            <Mail className="w-4 h-4 text-red-500 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {successNotice && (
+          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-medium flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{successNotice}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
@@ -47,7 +88,7 @@ const Login = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="Enter your email"
+              placeholder="name@domain.com"
               className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 mt-1 text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
             />
           </div>
@@ -66,9 +107,26 @@ const Login = () => {
 
           <button type="submit" disabled={loading} className="btn-primary bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold w-full justify-center text-sm py-2.5 rounded-xl inline-flex items-center gap-2 shadow-sm transition-all cursor-pointer">
             <LogIn className="w-4 h-4 text-white" />
-            <span>{loading ? 'Signing In...' : 'Sign In'}</span>
+            <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
           </button>
         </form>
+
+        {/* Admin Quick Login Card */}
+        <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-amber-900 font-bold text-xs">
+              <Shield className="w-4 h-4 text-amber-600" />
+              <span>Admin Access Credentials</span>
+            </div>
+            <button onClick={handleDemoAdmin} className="text-[11px] bg-amber-600 text-white px-2.5 py-1 rounded-lg font-bold hover:bg-amber-700 transition">
+              Fill Admin Credentials
+            </button>
+          </div>
+          <p className="text-[11px] text-amber-800 leading-relaxed">
+            <strong>Admin Email:</strong> <code>barathsuriya.s2025ece@sece.ac.in</code><br />
+            <strong>Password:</strong> <code>barath12345</code>
+          </p>
+        </div>
 
         <div className="text-center text-xs text-slate-500 pt-2">
           Don't have an account? <Link to="/register" className="text-indigo-600 font-bold hover:underline">Register here</Link>

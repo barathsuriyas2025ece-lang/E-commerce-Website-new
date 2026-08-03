@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserPlus, Sparkles } from 'lucide-react';
+import { UserPlus, Sparkles, Mail, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+const validateEmail = (emailStr) => {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(String(emailStr).toLowerCase().trim());
+};
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -9,17 +14,41 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('customer');
   const [error, setError] = useState('');
+  const [successNotice, setSuccessNotice] = useState('');
   const { register, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const res = await register(name, email, password, role);
+    setSuccessNotice('');
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+
+    // Strict Email Format Validation
+    if (!validateEmail(cleanEmail)) {
+      setError('Please enter a valid email address (e.g., name@domain.com)');
+      return;
+    }
+
+    if (password.length < 5) {
+      setError('Password must be at least 5 characters long');
+      return;
+    }
+
+    const res = await register(cleanName, cleanEmail, password, role);
     if (res.success) {
-      navigate('/');
+      setSuccessNotice(`🎉 Welcome ${cleanName}! Account created and confirmation email sent to ${cleanEmail}`);
+      setTimeout(() => {
+        if (role === 'admin' || cleanEmail.includes('admin') || cleanEmail === 'barathsuriya.s2025ece@sece.ac.in') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/');
+        }
+      }, 1200);
     } else {
-      setError(res.message);
+      setError(res.message || 'Registration failed');
     }
   };
 
@@ -34,7 +63,19 @@ const Register = () => {
           <p className="text-xs text-slate-500">Join NexusMart E-Commerce</p>
         </div>
 
-        {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg font-medium">{error}</div>}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl font-medium flex items-center gap-2">
+            <Mail className="w-4 h-4 text-red-500 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {successNotice && (
+          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-medium flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{successNotice}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
@@ -56,7 +97,7 @@ const Register = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="Enter your email"
+              placeholder="name@domain.com"
               className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 mt-1 text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
             />
           </div>

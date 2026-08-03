@@ -19,6 +19,11 @@ const sanitizeInput = (str) => {
   return str.replace(/[$\{\}]/g, '').trim();
 };
 
+const validateEmailFormat = (emailStr) => {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(String(emailStr).toLowerCase().trim());
+};
+
 const registerUser = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -29,8 +34,12 @@ const registerUser = async (req, res) => {
     const cleanEmail = sanitizeInput(email).toLowerCase();
     const cleanName = sanitizeInput(name);
 
-    if (password.length < 6) {
-      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long' });
+    if (!validateEmailFormat(cleanEmail)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid email address format (e.g. name@example.com)' });
+    }
+
+    if (password.length < 5) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 5 characters long' });
     }
 
     // Trigger Welcome Email Notification
