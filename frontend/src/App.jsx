@@ -48,19 +48,19 @@ class ErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white p-6">
-          <div className="max-w-md w-full glass-panel p-8 rounded-3xl bg-slate-800/90 border border-slate-700 text-center space-y-6 shadow-2xl">
+          <div className="max-w-xl w-full glass-panel p-8 rounded-3xl bg-slate-800/90 border border-slate-700 text-center space-y-6 shadow-2xl">
             <div className="w-16 h-16 rounded-2xl bg-indigo-600/30 border border-indigo-400/30 flex items-center justify-center mx-auto text-indigo-400 text-2xl font-extrabold">
               ⚡
             </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-extrabold text-white">NexusMart Recovered Gracefully</h2>
-              <p className="text-xs text-slate-300">
-                A minor rendering glitch occurred. Click below to refresh your session.
-              </p>
+            <div className="space-y-3">
+              <h2 className="text-2xl font-extrabold text-white">NexusMart Diagnostics</h2>
+              <div className="p-4 bg-red-950/80 border border-red-500/40 rounded-2xl text-red-200 font-mono text-xs text-left overflow-x-auto max-h-48 leading-relaxed">
+                {this.state.error ? (this.state.error.stack || this.state.error.toString()) : 'Unknown Error Occurred'}
+              </div>
             </div>
             <button
               onClick={() => {
-                this.setState({ hasError: false });
+                this.setState({ hasError: false, error: null });
                 window.location.href = '/';
               }}
               className="w-full btn-primary bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 text-xs rounded-xl transition shadow-md cursor-pointer"
