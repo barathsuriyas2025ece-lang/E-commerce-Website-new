@@ -51,30 +51,41 @@ const sendWelcomeEmail = async ({ name, email }) => {
 
   const emailSubject = `🎉 Welcome to NexusMart E-Commerce, ${name || 'Valued Customer'}!`;
   const htmlContent = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #0f172a;">
-      <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9;">
-        <h1 style="color: #4f46e5; margin: 0; font-size: 26px;">Nexus<span style="color: #0f172a;">Mart</span></h1>
-        <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Enterprise AI-Powered E-Commerce Platform</p>
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #0f172a; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+      
+      <!-- Top Brand Header -->
+      <div style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+        <h1 style="margin: 0; font-size: 28px; font-weight: 800; tracking: -0.5px; color: #ffffff;">Nexus<span style="color: #6366f1;">Mart</span></h1>
+        <p style="margin: 6px 0 0 0; font-size: 13px; color: #e0e7ff; font-weight: 500;">Official Welcome & Account Confirmation</p>
       </div>
 
-      <div style="padding: 24px 0; color: #0f172a;">
-        <h2 style="color: #0f172a; font-size: 20px; margin-bottom: 12px;">Welcome aboard, ${name || 'Customer'}! 👋</h2>
-        <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-bottom: 16px;">
-          Thank you for creating an account with <strong>NexusMart E-Commerce</strong>. We're thrilled to have you!
+      <!-- Main Body Content -->
+      <div style="padding: 32px 28px; color: #0f172a;">
+        <h2 style="color: #0f172a; font-size: 22px; margin-top: 0; margin-bottom: 16px; font-weight: 700;">Welcome aboard, ${name || 'Customer'}! 👋</h2>
+        <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-bottom: 20px;">
+          Thank you for signing up with <strong>NexusMart E-Commerce</strong>. Your account has been registered successfully and is ready for use.
         </p>
 
-        <div style="background-color: #f0fdf4; padding: 16px; border-radius: 12px; border: 1px solid #bbf7d0; margin: 20px 0;">
-          <p style="margin: 4px 0; font-size: 14px; color: #166534;"><strong>🎁 Welcome Reward:</strong> You earned <strong>100 Loyalty Points</strong> on registration!</p>
-          <p style="margin: 4px 0; font-size: 13px; color: #15803d;"><strong>Account Email:</strong> ${recipientEmail}</p>
+        <!-- Reward Banner -->
+        <div style="background-color: #f0fdf4; padding: 20px; border-radius: 12px; border: 1px solid #bbf7d0; margin: 24px 0;">
+          <p style="margin: 0 0 8px 0; font-size: 15px; color: #166534; font-weight: 700;">🎁 Welcome Bonus Unlocked!</p>
+          <p style="margin: 0 0 4px 0; font-size: 13px; color: #15803d;">You earned <strong>100 Loyalty Points</strong> automatically credited to your account.</p>
+          <p style="margin: 4px 0 0 0; font-size: 13px; color: #166534;"><strong>Registered Email:</strong> <code>${recipientEmail}</code></p>
         </div>
 
-        <p style="font-size: 14px; line-height: 1.6; color: #334155;">
-          You can now browse our tech catalog, track orders in real-time, and ask our <strong>Floating AI Assistant</strong> to help you find products under your budget or apply coupons.
+        <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-bottom: 24px;">
+          Explore our wide range of products, track orders live, and make use of our <strong>AI Assistant</strong> for personalized shopping recommendations.
         </p>
+
+        <div style="border-top: 1px solid #f1f5f9; pt: 20px; margin-top: 24px;">
+          <p style="font-size: 13px; color: #64748b; margin: 0;">Warm regards,<br><strong style="color: #0f172a;">NexusMart Team</strong></p>
+        </div>
       </div>
 
-      <div style="text-align: center; padding-top: 20px; border-top: 1px solid #f1f5f9; color: #94a3b8; font-size: 12px;">
-        <p>© 2026 NexusMart E-Commerce Inc. All rights reserved.</p>
+      <!-- Footer -->
+      <div style="background-color: #f8fafc; padding: 20px 24px; text-align: center; border-top: 1px solid #f1f5f9; color: #94a3b8; font-size: 12px;">
+        <p style="margin: 0 0 4px 0;">© 2026 NexusMart E-Commerce Inc. All rights reserved.</p>
+        <p style="margin: 0; color: #cbd5e1;">This is an automated system email.</p>
       </div>
     </div>
   `;
@@ -104,38 +115,67 @@ const sendWelcomeEmail = async ({ name, email }) => {
   }
 };
 
-const sendLoginNotificationEmail = async ({ name, email, time = new Date().toLocaleString() }) => {
+const sendLoginNotificationEmail = async ({ name, email, time = new Date().toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' }) }) => {
   const recipientEmail = email;
   if (!recipientEmail) return;
 
-  const emailSubject = `🔐 Security Alert: Successful Sign-In to NexusMart E-Commerce`;
+  const emailSubject = `🔐 Security Notification: Successful Sign-In to NexusMart`;
 
   const htmlContent = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #0f172a;">
-      <div style="text-align: center; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9;">
-        <h1 style="color: #4f46e5; margin: 0; font-size: 24px;">Nexus<span style="color: #0f172a;">Mart</span></h1>
-        <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Enterprise AI E-Commerce Platform</p>
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #0f172a; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+      
+      <!-- Top Brand Header -->
+      <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+        <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #ffffff;">Nexus<span style="color: #818cf8;">Mart</span></h1>
+        <p style="margin: 6px 0 0 0; font-size: 13px; color: #c7d2fe; font-weight: 500;">Account Sign-In Security Notice</p>
       </div>
 
-      <div style="padding: 24px 0; color: #0f172a;">
-        <h2 style="color: #0f172a; font-size: 18px; margin-bottom: 12px;">Hello ${name || 'Customer'},</h2>
-        <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-bottom: 16px;">
-          You have successfully signed in to your <strong>NexusMart E-Commerce account</strong>.
+      <!-- Main Content -->
+      <div style="padding: 32px 28px; color: #0f172a;">
+        <h2 style="color: #0f172a; font-size: 20px; margin-top: 0; margin-bottom: 12px; font-weight: 700;">Hello ${name || 'Valued Customer'},</h2>
+        <p style="font-size: 14px; line-height: 1.6; color: #334155; margin-bottom: 20px;">
+          This email confirms that you recently signed in to your <strong>NexusMart E-Commerce</strong> account.
         </p>
 
-        <div style="background-color: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; margin: 20px 0;">
-          <p style="margin: 6px 0; font-size: 13px; color: #334155;"><strong>Account Email:</strong> ${recipientEmail}</p>
-          <p style="margin: 6px 0; font-size: 13px; color: #334155;"><strong>Sign-In Time:</strong> ${time}</p>
-          <p style="margin: 6px 0; font-size: 13px; color: #16a34a;"><strong>Security Status:</strong> Authenticated & Active</p>
+        <!-- Activity Summary Table -->
+        <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin: 24px 0;">
+          <h3 style="margin: 0 0 14px 0; font-size: 14px; color: #1e293b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Sign-In Details</h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #334155;">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-weight: 600; width: 140px;">Account Email:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #0f172a;">${recipientEmail}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Date & Time:</td>
+              <td style="padding: 6px 0; font-weight: 600; color: #0f172a;">${time}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Access Method:</td>
+              <td style="padding: 6px 0; font-weight: 600; color: #0f172a;">Web Sign-In (Authenticated)</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; font-weight: 600;">Session Status:</td>
+              <td style="padding: 6px 0; font-weight: 700; color: #16a34a;">Active & Secure</td>
+            </tr>
+          </table>
         </div>
 
-        <p style="font-size: 12px; color: #64748b; line-height: 1.5;">
-          If this sign-in was authorized by you, no further action is required. If you did not recognize this login activity, please change your password immediately.
-        </p>
+        <!-- Security Advice -->
+        <div style="background-color: #eff6ff; padding: 16px 20px; border-radius: 12px; border-left: 4px solid #3b82f6; margin-bottom: 24px;">
+          <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #1e40af;">
+            <strong>Security Note:</strong> If you authorized this sign-in, no further action is required. If you did not perform this login, please update your account password immediately to maintain account safety.
+          </p>
+        </div>
+
+        <div style="border-top: 1px solid #f1f5f9; padding-top: 20px; margin-top: 24px;">
+          <p style="font-size: 13px; color: #64748b; margin: 0;">Sincerely,<br><strong style="color: #0f172a;">NexusMart Security & Operations Team</strong></p>
+        </div>
       </div>
 
-      <div style="text-align: center; padding-top: 20px; border-top: 1px solid #f1f5f9; color: #94a3b8; font-size: 12px;">
-        <p>© 2026 NexusMart E-Commerce Inc. All rights reserved.</p>
+      <!-- Footer -->
+      <div style="background-color: #f8fafc; padding: 20px 24px; text-align: center; border-top: 1px solid #f1f5f9; color: #94a3b8; font-size: 12px;">
+        <p style="margin: 0 0 4px 0;">© 2026 NexusMart E-Commerce Inc. All rights reserved.</p>
+        <p style="margin: 0; color: #cbd5e1;">This security notice was sent to ${recipientEmail}</p>
       </div>
     </div>
   `;

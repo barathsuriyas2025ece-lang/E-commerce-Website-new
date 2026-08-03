@@ -36,7 +36,7 @@ const Login = () => {
 
     const res = await login(cleanEmail, password);
     if (res.success) {
-      setSuccessNotice(`📧 Sign-in confirmation email dispatched to ${cleanEmail}`);
+      setSuccessNotice(`📧 Professional security alert email dispatched to ${cleanEmail}`);
       setTimeout(() => {
         if (res.user?.role === 'admin' || cleanEmail.includes('admin') || cleanEmail === 'barathsuriya.s2025ece@sece.ac.in') {
           navigate('/admin/dashboard');
