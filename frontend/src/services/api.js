@@ -1,11 +1,19 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://e-commerce-website-oxb0.onrender.com/api';
+const getApiBase = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:5000/api';
+  }
+  return 'https://e-commerce-website-oxb0.onrender.com/api';
+};
 
-// Create Axios instance with 10s timeout to allow Render web service response
+const API_BASE = getApiBase();
+
+// Create Axios instance with 15s timeout to allow backend / Render response
 const api = axios.create({
   baseURL: API_BASE,
-  timeout: 10000,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -25,19 +33,12 @@ export const authAPI = {
     try {
       return await api.post('/auth/login', credentials);
     } catch (err) {
-      // Instant Fallback for 100% speed if API is sleeping/slow
-      const email = credentials.email.toLowerCase().trim();
-      const role = email.includes('admin') || email === 'barathsuriya.s2025ece@sece.ac.in' ? 'admin' : 'customer';
-      const name = email === 'barathsuriya.s2025ece@sece.ac.in' ? 'Barath Suriya (Admin)' : email.split('@')[0];
-      
-      return {
-        data: {
-          success: true,
-          token: 'fast_token_' + Date.now(),
-          user: { id: 'u_' + Date.now(), name, email, role, loyaltyPoints: 200 },
-          message: `Sign in successful! Confirmation sent to ${email}`,
-        },
-      };
+      console.error('Backend Authentication Error:', err?.response?.data || err.message);
+      // Return real backend error if available, or throw
+      if (err.response && err.response.data) {
+        return err.response;
+      }
+      throw new Error(err?.response?.data?.message || err.message || 'Unable to connect to authentication server');
     }
   },
 
@@ -45,14 +46,11 @@ export const authAPI = {
     try {
       return await api.post('/auth/register', userData);
     } catch (err) {
-      return {
-        data: {
-          success: true,
-          token: 'fast_token_' + Date.now(),
-          user: { id: 'u_' + Date.now(), name: userData.name, email: userData.email, role: userData.role || 'customer', loyaltyPoints: 100 },
-          message: `Welcome ${userData.name}! Confirmation sent to ${userData.email}`,
-        },
-      };
+      console.error('Backend Registration Error:', err?.response?.data || err.message);
+      if (err.response && err.response.data) {
+        return err.response;
+      }
+      throw new Error(err?.response?.data?.message || err.message || 'Unable to connect to authentication server');
     }
   },
 

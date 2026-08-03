@@ -22,16 +22,17 @@ export const AuthProvider = ({ children }) => {
     setNotification('');
     try {
       const res = await authAPI.login({ email, password });
-      if (res.data.success) {
+      if (res.data && res.data.success) {
         setUser(res.data.user);
         setToken(res.data.token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
         localStorage.setItem('token', res.data.token);
-        setNotification(`📧 Sign-in confirmation email sent to ${email}`);
-        return { success: true, message: res.data.message };
+        setNotification(`📧 Sign-in confirmation email dispatched to ${email}`);
+        return { success: true, user: res.data.user, message: res.data.message };
       }
+      return { success: false, message: res.data?.message || 'Login failed' };
     } catch (err) {
-      return { success: false, message: err.response?.data?.message || 'Login failed' };
+      return { success: false, message: err.response?.data?.message || err.message || 'Login failed' };
     } finally {
       setLoading(false);
     }
@@ -42,16 +43,17 @@ export const AuthProvider = ({ children }) => {
     setNotification('');
     try {
       const res = await authAPI.register({ name, email, password, role });
-      if (res.data.success) {
+      if (res.data && res.data.success) {
         setUser(res.data.user);
         setToken(res.data.token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
         localStorage.setItem('token', res.data.token);
         setNotification(`📧 Welcome ${name}! A confirmation email has been sent to ${email}`);
-        return { success: true, message: res.data.message };
+        return { success: true, user: res.data.user, message: res.data.message };
       }
+      return { success: false, message: res.data?.message || 'Registration failed' };
     } catch (err) {
-      return { success: false, message: err.response?.data?.message || 'Registration failed' };
+      return { success: false, message: err.response?.data?.message || err.message || 'Registration failed' };
     } finally {
       setLoading(false);
     }
