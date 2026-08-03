@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Heart, User, Sun, Moon, Search, Sparkles, Shield, Package } from 'lucide-react';
+import { ShoppingBag, Heart, User, Sun, Moon, Search, Sparkles, Shield, Package, MapPin, Flame, Award, Truck, Tag } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -32,6 +32,7 @@ const Navbar = () => {
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-900 shadow-sm">
+      {/* Top Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Brand Logo */}
         <Link to="/" className="flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 hover:opacity-90">
@@ -77,7 +78,7 @@ const Navbar = () => {
           <NotificationBell />
 
           {/* Wishlist Icon */}
-          <Link to="/wishlist" className="p-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 relative transition">
+          <Link to="/wishlist" className="p-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 relative transition" title="Wishlist">
             <Heart className="w-5 h-5" />
             {wishlistCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
@@ -99,6 +100,7 @@ const Navbar = () => {
           <button
             onClick={() => setIsCartOpen(true)}
             className="p-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 relative transition"
+            title="Cart"
           >
             <ShoppingBag className="w-5 h-5" />
             {itemCount > 0 && (
@@ -141,6 +143,47 @@ const Navbar = () => {
               <span>Sign In</span>
             </Link>
           )}
+        </div>
+      </div>
+
+      {/* 🌟 Amazon-Style Sub-Navigation Bar */}
+      <div className="bg-slate-900 text-slate-200 border-t border-slate-800 text-xs py-2 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between overflow-x-auto no-scrollbar gap-6">
+          {/* Location Delivery Selector */}
+          <div className="flex items-center gap-1.5 text-slate-300 shrink-0 font-medium hover:text-white cursor-pointer">
+            <MapPin className="w-3.5 h-3.5 text-amber-400" />
+            <span>Deliver to <strong className="text-white">India</strong></span>
+          </div>
+
+          {/* Sub-Header Category Navigation Links */}
+          <div className="flex items-center gap-5 shrink-0 font-medium">
+            <Link to="/shop" className="hover:text-amber-300 transition flex items-center gap-1">
+              <Flame className="w-3.5 h-3.5 text-amber-400" />
+              <span>Today's Deals</span>
+            </Link>
+
+            <Link to="/shop?category=electronics" className="hover:text-amber-300 transition">
+              Electronics & Laptops
+            </Link>
+
+            <Link to="/shop?category=audio" className="hover:text-amber-300 transition">
+              Audio & Wearables
+            </Link>
+
+            <Link to="/shop?category=apparel" className="hover:text-amber-300 transition">
+              Apparel
+            </Link>
+
+            <Link to="/orders" className="hover:text-amber-300 transition flex items-center gap-1 text-indigo-300">
+              <Package className="w-3.5 h-3.5" />
+              <span>My Orders & Tracking</span>
+            </Link>
+
+            <span className="text-emerald-400 flex items-center gap-1 font-bold">
+              <Truck className="w-3.5 h-3.5" />
+              <span>FREE Express Shipping over ₹499</span>
+            </span>
+          </div>
         </div>
       </div>
     </header>

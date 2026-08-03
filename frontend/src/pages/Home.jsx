@@ -257,6 +257,49 @@ const Home = () => {
         </div>
       </section>
 
+      {/* 🛡️ Amazon-Style Trust & Customer Assurance Grid */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="glass-panel p-5 bg-white border border-slate-200 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+            <Truck className="w-6 h-6 text-indigo-600" />
+          </div>
+          <div>
+            <h4 className="font-extrabold text-slate-900 text-sm">FREE & Fast Delivery</h4>
+            <p className="text-xs text-slate-500 mt-0.5">Express shipping on orders above ₹499</p>
+          </div>
+        </div>
+
+        <div className="glass-panel p-5 bg-white border border-slate-200 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-6 h-6 text-emerald-600" />
+          </div>
+          <div>
+            <h4 className="font-extrabold text-slate-900 text-sm">7-Day Easy Return</h4>
+            <p className="text-xs text-slate-500 mt-0.5">100% Money-back replacement guarantee</p>
+          </div>
+        </div>
+
+        <div className="glass-panel p-5 bg-white border border-slate-200 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
+            <Zap className="w-6 h-6 text-amber-600 fill-current" />
+          </div>
+          <div>
+            <h4 className="font-extrabold text-slate-900 text-sm">100% Genuine Products</h4>
+            <p className="text-xs text-slate-500 mt-0.5">Directly sourced official brand stock</p>
+          </div>
+        </div>
+
+        <div className="glass-panel p-5 bg-white border border-slate-200 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition">
+          <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0">
+            <Bot className="w-6 h-6 text-purple-600" />
+          </div>
+          <div>
+            <h4 className="font-extrabold text-slate-900 text-sm">24/7 AI Shopping Help</h4>
+            <p className="text-xs text-slate-500 mt-0.5">Instant voice & text action support</p>
+          </div>
+        </div>
+      </section>
+
       {/* Featured Products Catalog - Instant O(1) Render */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
