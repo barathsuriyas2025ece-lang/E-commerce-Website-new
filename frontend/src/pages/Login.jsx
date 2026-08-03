@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, Sparkles, Shield, Mail, CheckCircle2 } from 'lucide-react';
+import { LogIn, Sparkles, Mail, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const validateEmail = (emailStr) => {
@@ -15,12 +15,6 @@ const Login = () => {
   const [successNotice, setSuccessNotice] = useState('');
   const { login, loading } = useAuth();
   const navigate = useNavigate();
-
-  const handleDemoAdmin = () => {
-    setEmail('barathsuriya.s2025ece@sece.ac.in');
-    setPassword('barath12345');
-    setError('');
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -110,23 +104,6 @@ const Login = () => {
             <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
           </button>
         </form>
-
-        {/* Admin Quick Login Card */}
-        <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-amber-900 font-bold text-xs">
-              <Shield className="w-4 h-4 text-amber-600" />
-              <span>Admin Access Credentials</span>
-            </div>
-            <button onClick={handleDemoAdmin} className="text-[11px] bg-amber-600 text-white px-2.5 py-1 rounded-lg font-bold hover:bg-amber-700 transition">
-              Fill Admin Credentials
-            </button>
-          </div>
-          <p className="text-[11px] text-amber-800 leading-relaxed">
-            <strong>Admin Email:</strong> <code>barathsuriya.s2025ece@sece.ac.in</code><br />
-            <strong>Password:</strong> <code>barath12345</code>
-          </p>
-        </div>
 
         <div className="text-center text-xs text-slate-500 pt-2">
           Don't have an account? <Link to="/register" className="text-indigo-600 font-bold hover:underline">Register here</Link>
