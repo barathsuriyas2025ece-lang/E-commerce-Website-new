@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingBag, ArrowRight, Tag } from 'lucide-react';
+import { Trash2, ShoppingBag, ArrowRight, Tag, Sparkles } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAI } from '../context/AIContext';
 import { couponAPI } from '../services/api';
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, subtotal, tax, discountAmount, total, appliedCoupon, setAppliedCoupon } = useCart();
+  const { setIsAiOpen, sendMessage } = useAI();
   const [couponCode, setCouponCode] = useState('');
   const [couponMsg, setCouponMsg] = useState('');
   const navigate = useNavigate();
@@ -27,24 +29,24 @@ const Cart = () => {
 
   if (cartItems.length === 0) {
     return (
-      <div className="glass-panel p-12 text-center text-slate-700 space-y-4 max-w-lg mx-auto my-12 bg-white border border-slate-200 shadow-sm">
+      <div className="glass-panel p-12 text-center text-slate-700 space-y-4 max-w-lg mx-auto my-12 bg-white border border-slate-200 shadow-sm rounded-3xl">
         <ShoppingBag className="w-16 h-16 text-indigo-600 mx-auto opacity-70" />
         <h2 className="text-2xl font-extrabold text-slate-900">Your Shopping Cart is Empty</h2>
         <p className="text-sm text-slate-500">Discover our collection and start adding your favorite products!</p>
-        <Link to="/shop" className="btn-primary inline-flex">Explore Catalog</Link>
+        <Link to="/shop" className="btn-primary inline-flex py-3 px-6 text-xs font-bold rounded-xl">Explore Catalog</Link>
       </div>
     );
   }
 
   return (
     <div className="space-y-8 pb-16">
-      <h1 className="text-3xl font-extrabold text-slate-900">Shopping Cart ({cartItems.length} items)</h1>
+      <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Shopping Cart ({cartItems.length} items)</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Item List */}
         <div className="lg:col-span-2 space-y-4">
           {cartItems.map((item) => (
-            <div key={item._id} className="glass-panel p-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-slate-200 shadow-sm">
+            <div key={item._id} className="glass-panel p-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
               <div className="flex items-center gap-4 w-full sm:w-auto">
                 <img src={item.images?.[0]} alt={item.name} className="w-16 h-16 rounded-xl object-cover bg-slate-50 border border-slate-100 shrink-0" />
                 <div>
@@ -55,10 +57,10 @@ const Cart = () => {
 
               <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
                 {/* Quantity adjustment */}
-                <div className="flex items-center bg-slate-100 border border-slate-200 rounded-lg">
-                  <button onClick={() => updateQuantity(item._id, item.quantity - 1)} className="px-2.5 py-1 text-slate-700 hover:bg-slate-200 font-bold">-</button>
+                <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl">
+                  <button onClick={() => updateQuantity(item._id, item.quantity - 1)} className="px-2.5 py-1 text-slate-700 hover:bg-slate-200 font-bold text-xs rounded-l-xl">-</button>
                   <span className="px-3 text-xs font-bold text-slate-900">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item._id, item.quantity + 1)} className="px-2.5 py-1 text-slate-700 hover:bg-slate-200 font-bold">+</button>
+                  <button onClick={() => updateQuantity(item._id, item.quantity + 1)} className="px-2.5 py-1 text-slate-700 hover:bg-slate-200 font-bold text-xs rounded-r-xl">+</button>
                 </div>
 
                 <div className="text-sm font-extrabold text-slate-900">
@@ -74,8 +76,20 @@ const Cart = () => {
         </div>
 
         {/* Order Summary Box */}
-        <div className="glass-panel p-6 rounded-2xl h-fit space-y-6 bg-white border border-slate-200 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Order Summary</h2>
+        <div className="glass-panel p-6 rounded-3xl h-fit space-y-6 bg-white border border-slate-200 shadow-sm">
+          <h2 className="text-base font-extrabold text-slate-900 border-b border-slate-100 pb-3">Order Summary</h2>
+
+          {/* Contextual AI Assistant Helper */}
+          <button
+            onClick={() => {
+              setIsAiOpen(true);
+              sendMessage("Find me the best matching deal or discount coupon for my current cart items", cartItems);
+            }}
+            className="w-full p-3 rounded-xl bg-indigo-50/80 border border-indigo-200 text-indigo-700 text-xs font-bold flex items-center justify-center gap-2 hover:bg-indigo-100 transition cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+            <span>Ask AI to find a better deal</span>
+          </button>
 
           {/* Coupon Form */}
           <form onSubmit={handleApplyCoupon} className="space-y-2">
@@ -89,9 +103,9 @@ const Cart = () => {
                 placeholder="e.g. SAVE10"
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value)}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 uppercase font-bold focus:outline-none focus:border-indigo-500"
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 uppercase font-bold focus:outline-none focus:border-indigo-500"
               />
-              <button type="submit" className="btn-secondary py-1.5 px-3 text-xs">Apply</button>
+              <button type="submit" className="btn-secondary py-1.5 px-3 text-xs font-bold rounded-xl">Apply</button>
             </div>
             {couponMsg && <p className="text-xs text-indigo-600 font-semibold">{couponMsg}</p>}
           </form>
@@ -112,7 +126,7 @@ const Cart = () => {
             </div>
           </div>
 
-          <button onClick={() => navigate('/checkout')} className="btn-primary w-full justify-center text-sm py-3">
+          <button onClick={() => navigate('/checkout')} className="btn-primary w-full justify-center text-sm py-3 rounded-xl font-extrabold">
             <span>Proceed to Checkout</span>
             <ArrowRight className="w-4 h-4" />
           </button>
