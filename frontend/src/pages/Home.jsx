@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, ArrowRight, Laptop, Headphones, Shirt, Home as HomeIcon, Zap, Bot, Package, Clock, Truck, CheckCircle2, ChevronRight, ShieldCheck } from 'lucide-react';
+import { Sparkles, ArrowRight, Laptop, Headphones, Shirt, Home as HomeIcon, Zap, Bot, Truck, ShieldCheck } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { useProducts } from '../context/ProductContext';
 import { useAI } from '../context/AIContext';
-import { useAuth } from '../context/AuthContext';
-import { orderAPI, fallbackSampleOrders } from '../services/api';
 
 const categories = [
   { name: 'Electronics & Laptops', slug: 'electronics', icon: Laptop, color: 'bg-indigo-600 text-white' },
@@ -17,69 +15,8 @@ const categories = [
 const Home = () => {
   const { products } = useProducts();
   const { setIsAiOpen, sendMessage } = useAI();
-  const { user } = useAuth();
 
-  const [myOrders, setMyOrders] = useState([]);
-  const [orderFilter, setOrderFilter] = useState('all'); // 'all', 'in_progress', 'delivered'
-  const [ordersLoading, setOrdersLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchHomeOrders = async () => {
-      try {
-        const res = await orderAPI.getMyOrders();
-        if (res.data && res.data.success && Array.isArray(res.data.orders)) {
-          setMyOrders(res.data.orders);
-        } else {
-          setMyOrders(fallbackSampleOrders);
-        }
-      } catch (err) {
-        setMyOrders(fallbackSampleOrders);
-      } finally {
-        setOrdersLoading(false);
-      }
-    };
-    fetchHomeOrders();
-  }, [user]);
-
-  const featuredProducts = products.filter((p) => p.isFeatured || true).slice(0, 4);
-
-  // Filter orders based on active tab
-  const filteredOrders = myOrders.filter((order) => {
-    const status = (order.orderStatus || 'Processing').toLowerCase();
-    if (orderFilter === 'in_progress') {
-      return status === 'pending' || status === 'processing' || status === 'shipped';
-    }
-    if (orderFilter === 'delivered') {
-      return status === 'delivered';
-    }
-    return true;
-  });
-
-  const getStatusBadge = (statusStr) => {
-    const status = (statusStr || 'Processing').toLowerCase();
-    if (status === 'delivered') {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Delivered</span>
-        </span>
-      );
-    }
-    if (status === 'shipped') {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold">
-          <Truck className="w-3.5 h-3.5 text-amber-600" />
-          <span>Shipped (In Transit)</span>
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold">
-        <Clock className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
-        <span>Processing</span>
-      </span>
-    );
-  };
+  const featuredProducts = (products || []).filter((p) => p?.isFeatured || true).slice(0, 4);
 
   return (
     <div className="space-y-12 pb-16">
@@ -117,121 +54,6 @@ const Home = () => {
               <span>Ask AI for Laptops</span>
             </button>
           </div>
-        </div>
-      </section>
-
-      {/* 📦 Customer Ordered Items & Live Shipment Status Section */}
-      <section className="space-y-6">
-        <div className="glass-panel p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <Package className="w-6 h-6 text-indigo-600" />
-                <h2 className="text-2xl font-extrabold text-slate-900">Your Ordered Items & Live Status</h2>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">Access your purchases, track live shipments, and view delivered items</p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-bold border border-slate-200">
-                <button
-                  onClick={() => setOrderFilter('all')}
-                  className={`px-3 py-1.5 rounded-lg transition ${orderFilter === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  All ({(myOrders || []).length})
-                </button>
-                <button
-                  onClick={() => setOrderFilter('in_progress')}
-                  className={`px-3 py-1.5 rounded-lg transition ${orderFilter === 'in_progress' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  In Process ({(myOrders || []).filter((o) => (o?.orderStatus || '').toLowerCase() !== 'delivered').length})
-                </button>
-                <button
-                  onClick={() => setOrderFilter('delivered')}
-                  className={`px-3 py-1.5 rounded-lg transition ${orderFilter === 'delivered' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                >
-                  Delivered ({(myOrders || []).filter((o) => (o?.orderStatus || '').toLowerCase() === 'delivered').length})
-                </button>
-              </div>
-
-              <Link to="/orders" className="btn-secondary py-2 px-3 text-xs font-bold inline-flex items-center gap-1">
-                <span>All Orders</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          </div>
-
-          {ordersLoading ? (
-            <div className="py-8 text-center text-xs text-slate-500 font-medium">Loading your ordered items...</div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="py-8 text-center text-xs text-slate-500 font-medium space-y-3">
-              <p>No orders found matching the selected filter.</p>
-              <Link to="/shop" className="btn-primary py-2 px-4 text-xs font-bold inline-block">Browse Catalog & Place Order</Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredOrders.slice(0, 4).map((order, orderIdx) => {
-                const orderIdStr = (order._id || order.id || `1023${orderIdx}`).toString();
-                return (
-                  <div key={orderIdStr} className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-indigo-300 transition shadow-sm space-y-4">
-                    {/* Header Info */}
-                    <div className="flex items-center justify-between text-xs border-b border-slate-200/60 pb-3">
-                      <div>
-                        <span className="text-slate-500 font-medium">Order ID: </span>
-                        <span className="font-mono font-bold text-slate-900">#{orderIdStr.slice(-6)}</span>
-                      </div>
-                      {getStatusBadge(order.orderStatus)}
-                    </div>
-
-                    {/* Items Display */}
-                    <div className="space-y-3">
-                      {order.orderItems?.map((item, idx) => {
-                        const pId = item.product || item._id || item.id || '';
-                        return (
-                          <div key={idx} className="flex items-center gap-3">
-                            <Link to={pId ? `/product/${pId}` : '/shop'} className="shrink-0">
-                              <img
-                                src={item.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'}
-                                alt={item.name || 'Product'}
-                                className="w-12 h-12 rounded-xl object-cover border border-slate-200 bg-white hover:opacity-80 transition cursor-pointer"
-                              />
-                            </Link>
-                            <div className="flex-1 min-w-0 text-xs">
-                              <Link to={pId ? `/product/${pId}` : '/shop'} className="hover:text-indigo-600 transition">
-                                <h4 className="font-bold text-slate-900 truncate hover:text-indigo-600 cursor-pointer">{item.name}</h4>
-                              </Link>
-                              <p className="text-slate-500 text-[11px]">Qty: {item.quantity} × ₹{item.price?.toLocaleString()}</p>
-                            </div>
-                            <div className="text-xs font-extrabold text-slate-900">
-                              ₹{((item.price || 0) * (item.quantity || 1)).toLocaleString()}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Courier & Tracking Footer */}
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 text-xs text-slate-600">
-                      <div>
-                        <span className="text-slate-500">Tracking: </span>
-                        <span className="font-mono font-bold text-slate-800">{order.trackingNumber || 'TRK-98471203'}</span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setIsAiOpen(true);
-                          sendMessage(`Where is my order #${orderIdStr.slice(-6)}?`);
-                        }}
-                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1"
-                      >
-                        <Bot className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>Track via AI</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
       </section>
 
@@ -310,7 +132,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Featured Products Catalog - Instant O(1) Render */}
+      {/* Featured Products Catalog */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -325,7 +147,7 @@ const Home = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {featuredProducts.map((product) => (
-            <ProductCard key={product._id} product={product} />
+            <ProductCard key={product._id || product.id} product={product} />
           ))}
         </div>
       </section>
