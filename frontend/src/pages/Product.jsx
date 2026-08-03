@@ -28,24 +28,7 @@ const Product = () => {
   const [successMsg, setSuccessMsg] = useState('');
 
   const currentUserId = user?.id || user?._id || '';
-  const reviewsList = product?.reviews || [
-    {
-      _id: 'sample_rev_1',
-      user: 'user_sample_1',
-      userName: 'Suriya S.',
-      rating: 5,
-      comment: 'Exceptional quality and performance! Exceeded my expectations in speed and battery life.',
-      createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    },
-    {
-      _id: 'sample_rev_2',
-      user: 'user_sample_2',
-      userName: 'Priya R.',
-      rating: 4,
-      comment: 'Very sleek design and fast delivery. Highly recommended for daily productivity!',
-      createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    },
-  ];
+  const reviewsList = product?.reviews || [];
 
   const existingReview = currentUserId
     ? reviewsList.find((r) => r.user && r.user.toString() === currentUserId.toString())

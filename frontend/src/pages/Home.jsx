@@ -184,29 +184,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ⭐ Customer Reviews */}
-      <section className="space-y-6">
-        <div className="text-center space-y-1">
-          <h2 className="text-xl font-extrabold text-slate-900">What Our Customers Say</h2>
-          <p className="text-xs text-slate-500">Real feedback from 10,000+ satisfied buyers</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {customerReviews.map((rev, idx) => (
-            <div key={idx} className="glass-panel p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
-              <div className="flex items-center gap-1 text-amber-500">
-                {[...Array(rev.rating)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-current" />
-                ))}
-              </div>
-              <p className="text-xs text-slate-700 leading-relaxed font-medium">"{rev.comment}"</p>
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-900">{rev.name}</span>
-                <span className="text-[10px] text-slate-400">{rev.location}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+
 
       {/* ✉️ Newsletter Subscription */}
       <section className="bg-indigo-600 rounded-3xl p-8 sm:p-10 text-white text-center space-y-4 shadow-xl">
