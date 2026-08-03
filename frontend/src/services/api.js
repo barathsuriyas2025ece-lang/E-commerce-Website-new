@@ -54,6 +54,18 @@ export const authAPI = {
     }
   },
 
+  adminLogin: async (password) => {
+    try {
+      return await api.post('/auth/admin-login', { password });
+    } catch (err) {
+      console.error('Admin Authentication Error:', err?.response?.data || err.message);
+      if (err.response && err.response.data) {
+        return err.response;
+      }
+      throw new Error(err?.response?.data?.message || err.message || 'Invalid admin passcode');
+    }
+  },
+
   getMe: () => api.get('/auth/me'),
 };
 

@@ -29,6 +29,7 @@ import AdminProducts from './pages/admin/Products';
 import AdminOrders from './pages/admin/Orders';
 import AdminUsers from './pages/admin/Users';
 import AdminCoupons from './pages/admin/Coupons';
+import AdminLogin from './pages/AdminLogin';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -112,6 +113,7 @@ function App() {
                           <Route path="/register" element={<Register />} />
 
                           {/* Admin Routes */}
+                          <Route path="/admin/login" element={<AdminLogin />} />
                           <Route path="/admin/dashboard" element={<AdminDashboard />} />
                           <Route path="/admin/products" element={<AdminProducts />} />
                           <Route path="/admin/orders" element={<AdminOrders />} />

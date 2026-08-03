@@ -70,8 +70,29 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('wishlist');
   };
 
+  const adminLogin = async (password) => {
+    setLoading(true);
+    setNotification('');
+    try {
+      const res = await authAPI.adminLogin(password);
+      if (res.data && res.data.success) {
+        setUser(res.data.user);
+        setToken(res.data.token);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+        localStorage.setItem('token', res.data.token);
+        setNotification('🔑 Admin authentication successful. Welcome to Admin Control Panel!');
+        return { success: true, user: res.data.user };
+      }
+      return { success: false, message: res.data?.message || 'Admin authentication failed' };
+    } catch (err) {
+      return { success: false, message: err.response?.data?.message || err.message || 'Invalid Admin Security Passcode' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, notification, setNotification, login, register, logout, isAdmin: user?.role === 'admin' }}>
+    <AuthContext.Provider value={{ user, token, loading, notification, setNotification, login, register, adminLogin, logout, isAdmin: user?.role === 'admin' }}>
       {children}
     </AuthContext.Provider>
   );

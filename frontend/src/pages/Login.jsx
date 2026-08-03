@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, Sparkles, Mail, CheckCircle2 } from 'lucide-react';
+import { LogIn, Sparkles, Mail, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const validateEmail = (emailStr) => {
@@ -38,7 +38,7 @@ const Login = () => {
     if (res.success) {
       setSuccessNotice(`📧 Professional security alert email dispatched to ${cleanEmail}`);
       setTimeout(() => {
-        if (res.user?.role === 'admin' || cleanEmail.includes('admin') || cleanEmail === 'barathsuriya.s2025ece@sece.ac.in') {
+        if (res.user?.role === 'admin') {
           navigate('/admin/dashboard');
         } else {
           navigate('/');
@@ -56,7 +56,7 @@ const Login = () => {
           <div className="w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center mx-auto shadow-md">
             <Sparkles className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Sign In to Account</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">Customer Sign In</h1>
           <p className="text-xs text-slate-500">Enter your email and password below</p>
         </div>
 
@@ -105,8 +105,16 @@ const Login = () => {
           </button>
         </form>
 
-        <div className="text-center text-xs text-slate-500 pt-2">
-          Don't have an account? <Link to="/register" className="text-indigo-600 font-bold hover:underline">Register here</Link>
+        <div className="text-center text-xs text-slate-500 pt-2 border-t border-slate-100 flex flex-col gap-2">
+          <div>
+            Don't have an account? <Link to="/register" className="text-indigo-600 font-bold hover:underline">Register here</Link>
+          </div>
+          <div className="pt-2">
+            <Link to="/admin/login" className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-indigo-700 font-semibold bg-slate-50 hover:bg-indigo-50 px-3 py-1.5 rounded-xl border border-slate-200 transition">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Admin Panel Login (Passcode Only)</span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
