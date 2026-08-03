@@ -24,6 +24,25 @@ const validateEmailFormat = (emailStr) => {
   return re.test(String(emailStr).toLowerCase().trim());
 };
 
+const triggerAsyncWelcomeEmail = (name, email) => {
+  setImmediate(() => {
+    sendWelcomeEmail({ name, email }).catch((err) => {
+      console.error('[EMAIL ERROR]', err?.message || err);
+    });
+  });
+};
+
+const triggerAsyncLoginEmail = (name, email, req) => {
+  const userAgent = req.headers['user-agent'] || '';
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || req.socket?.remoteAddress || '';
+  
+  setImmediate(() => {
+    sendLoginNotificationEmail({ name, email, userAgent, clientIp }).catch((err) => {
+      console.error('[EMAIL ERROR]', err?.message || err);
+    });
+  });
+};
+
 const registerUser = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -42,9 +61,6 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Password must be at least 5 characters long' });
     }
 
-    // Trigger Welcome Email Notification
-    sendWelcomeEmail({ name: cleanName, email: cleanEmail });
-
     try {
       const existingUser = await User.findOne({ email: cleanEmail });
       if (existingUser) {
@@ -62,6 +78,10 @@ const registerUser = async (req, res) => {
       });
 
       const token = generateToken(user);
+      
+      // Trigger Welcome Email Notification AFTER successful user creation
+      triggerAsyncWelcomeEmail(cleanName, cleanEmail);
+
       return res.status(201).json({
         success: true,
         token,
@@ -82,6 +102,10 @@ const registerUser = async (req, res) => {
       };
 
       const token = generateToken(newUser);
+
+      // Trigger Welcome Email Notification AFTER successful registration
+      triggerAsyncWelcomeEmail(cleanName, cleanEmail);
+
       return res.status(201).json({
         success: true,
         token,
@@ -102,8 +126,9 @@ const loginUser = async (req, res) => {
 
     const cleanEmail = sanitizeInput(email).toLowerCase();
 
-    // Trigger Login Security Email Notification
-    sendLoginNotificationEmail({ name: cleanEmail.split('@')[0], email: cleanEmail });
+    if (!validateEmailFormat(cleanEmail)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid email address format' });
+    }
 
     // Admin authentication check
     if (cleanEmail === ADMIN_EMAIL && password === 'barath12345') {
@@ -115,6 +140,10 @@ const loginUser = async (req, res) => {
         loyaltyPoints: 1000,
       };
       const token = generateToken(adminUser);
+
+      // Trigger Login Security Email AFTER successful auth
+      triggerAsyncLoginEmail(adminUser.name, adminUser.email, req);
+
       return res.json({
         success: true,
         token,
@@ -127,11 +156,18 @@ const loginUser = async (req, res) => {
       const user = await User.findOne({ email: cleanEmail });
       if (user && (await bcrypt.compare(password, user.password))) {
         const token = generateToken(user);
+
+        // Trigger Login Security Email AFTER successful auth
+        triggerAsyncLoginEmail(user.name || cleanEmail.split('@')[0], user.email, req);
+
         return res.json({
           success: true,
           token,
           user: { id: user._id, name: user.name, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints },
         });
+      } else if (user) {
+        // Password did not match
+        return res.status(400).json({ success: false, message: 'Invalid email or password' });
       }
     } catch (dbErr) {}
 
@@ -147,6 +183,10 @@ const loginUser = async (req, res) => {
     };
 
     const token = generateToken(authenticatedUser);
+
+    // Trigger Login Security Email AFTER successful auth
+    triggerAsyncLoginEmail(authenticatedUser.name, authenticatedUser.email, req);
+
     return res.json({
       success: true,
       token,
