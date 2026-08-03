@@ -112,15 +112,18 @@ export const AuthProvider = ({ children }) => {
     return { success: true, user: newUser };
   };
 
-  const socialLogin = async (provider = 'google') => {
+  const socialLogin = async (provider = 'google', customEmail = '') => {
     setLoading(true);
     setNotification('');
 
     const providerName = provider.charAt(0).toUpperCase() + provider.slice(1);
+    const userEmail = (customEmail || `user.${Date.now().toString().slice(-4)}@gmail.com`).trim().toLowerCase();
+    const userName = userEmail.includes('@') ? userEmail.split('@')[0] : `${providerName} Verified Account`;
+
     const socialUser = {
       _id: 'user_' + Date.now(),
-      name: `${providerName} Verified Account`,
-      email: `user.${Date.now().toString().slice(-5)}@gmail.com`,
+      name: userName,
+      email: userEmail,
       role: 'customer',
       loyaltyPoints: 250,
       authProvider: provider,
@@ -131,7 +134,7 @@ export const AuthProvider = ({ children }) => {
     setToken(socialToken);
     localStorage.setItem('user', JSON.stringify(socialUser));
     localStorage.setItem('token', socialToken);
-    setNotification(`🎉 Successfully authenticated with ${providerName}!`);
+    setNotification(`🎉 Successfully authenticated as ${userEmail} via ${providerName}!`);
     setLoading(false);
     return { success: true, user: socialUser };
   };
