@@ -33,41 +33,39 @@ const AdminLogin = () => {
 
   return (
     <div className="max-w-md mx-auto my-14 space-y-6">
-      <div className="glass-panel p-8 sm:p-10 rounded-3xl space-y-6 bg-slate-900 text-white border border-slate-800 shadow-2xl relative overflow-hidden">
-        {/* Glow Accent */}
-        <div className="absolute -top-12 -right-12 w-32 h-32 bg-indigo-600/30 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="glass-panel p-8 sm:p-10 rounded-3xl space-y-6 bg-white text-slate-900 border border-slate-200 shadow-xl relative overflow-hidden">
+        {/* Top Header Badge & Icon */}
         <div className="text-center space-y-3 relative z-10">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center mx-auto shadow-lg shadow-indigo-500/20 border border-indigo-400/30">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center mx-auto shadow-md shadow-indigo-200 border border-indigo-100">
             <ShieldCheck className="w-8 h-8 text-white" />
           </div>
           <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-400 bg-indigo-950/80 px-2.5 py-1 rounded-full border border-indigo-800/60 inline-block mb-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200 inline-block mb-1">
               Restricted System Portal
             </span>
-            <h1 className="text-2xl font-extrabold text-white">Admin Access Login</h1>
-            <p className="text-xs text-slate-400 mt-1">Enter your admin security password to unlock control panel</p>
+            <h1 className="text-2xl font-extrabold text-slate-900">Admin Access Login</h1>
+            <p className="text-xs text-slate-500 mt-1">Enter your admin security password to unlock control panel</p>
           </div>
         </div>
 
         {error && (
-          <div className="p-3.5 bg-red-950/80 border border-red-500/40 text-red-200 text-xs rounded-xl font-medium flex items-center gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+          <div className="p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl font-semibold flex items-center gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {successNotice && (
-          <div className="p-3.5 bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 text-xs rounded-xl font-medium flex items-center gap-2.5">
-            <Lock className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-semibold flex items-center gap-2.5">
+            <Lock className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{successNotice}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5 text-xs relative z-10">
           <div>
-            <label className="text-slate-300 font-bold block mb-1.5 flex items-center gap-1.5">
-              <KeyRound className="w-3.5 h-3.5 text-indigo-400" />
+            <label className="text-slate-800 font-bold block mb-1.5 flex items-center gap-1.5">
+              <KeyRound className="w-4 h-4 text-indigo-600" />
               <span>Admin Security Passcode</span>
             </label>
             <input
@@ -76,27 +74,27 @@ const AdminLogin = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoFocus
-              placeholder="Enter admin password (e.g. barath12345)"
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono text-sm shadow-inner transition"
+              placeholder="Enter Admin Security Passcode"
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-600 focus:bg-white focus:ring-1 focus:ring-indigo-600 font-mono text-sm transition shadow-sm"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full btn-primary bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:from-indigo-700 active:to-purple-700 text-white font-extrabold text-sm py-3.5 rounded-xl inline-flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all cursor-pointer border border-indigo-400/30"
+            className="w-full btn-primary bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-extrabold text-sm py-3.5 rounded-xl inline-flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
           >
             <ShieldCheck className="w-4 h-4 text-white" />
             <span>{loading ? 'Verifying Passcode...' : 'Unlock Admin Panel'}</span>
           </button>
         </form>
 
-        <div className="pt-4 border-t border-slate-800 text-center flex items-center justify-between text-xs text-slate-400 relative z-10">
-          <Link to="/login" className="hover:text-indigo-300 font-medium inline-flex items-center gap-1 transition">
-            <ArrowLeft className="w-3.5 h-3.5" />
+        <div className="pt-4 border-t border-slate-200 text-center flex items-center justify-between text-xs text-slate-600 relative z-10">
+          <Link to="/login" className="hover:text-indigo-600 font-bold inline-flex items-center gap-1 transition">
+            <ArrowLeft className="w-3.5 h-3.5 text-indigo-600" />
             <span>Customer Login</span>
           </Link>
-          <Link to="/" className="hover:text-indigo-300 font-medium transition">
+          <Link to="/" className="hover:text-indigo-600 font-bold transition">
             Back to Home
           </Link>
         </div>
