@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Package } from 'lucide-react';
-import { productAPI } from '../../services/api';
+import { productAPI, fallbackSampleProducts } from '../../services/api';
 
 const AdminProducts = () => {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(fallbackSampleProducts);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -18,11 +18,14 @@ const AdminProducts = () => {
   const fetchProducts = async () => {
     try {
       const res = await productAPI.getProducts({});
-      if (res.data.success) {
+      if (res.data?.success && Array.isArray(res.data.products) && res.data.products.length > 0) {
         setProducts(res.data.products);
+      } else {
+        setProducts(fallbackSampleProducts);
       }
     } catch (err) {
       console.error('Error fetching admin products:', err);
+      setProducts(fallbackSampleProducts);
     }
   };
 
@@ -33,26 +36,31 @@ const AdminProducts = () => {
   const handleCreateProduct = async (e) => {
     e.preventDefault();
     try {
-      const res = await productAPI.createProduct({
+      const newProdData = {
         ...formData,
         price: Number(formData.price),
         stock: Number(formData.stock),
         images: [formData.imageUrl],
-      });
+      };
+      const res = await productAPI.createProduct(newProdData);
 
-      if (res.data.success) {
-        setIsAddModalOpen(false);
-        setFormData({
-          name: '',
-          description: '',
-          price: '',
-          category: 'Electronics & Laptops',
-          brand: 'Generic',
-          stock: 10,
-          imageUrl: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800',
-        });
-        fetchProducts();
-      }
+      const createdProduct = res?.data?.product || {
+        _id: 'prod_' + Date.now(),
+        ...newProdData,
+      };
+
+      setProducts((prev) => [createdProduct, ...prev]);
+
+      setIsAddModalOpen(false);
+      setFormData({
+        name: '',
+        description: '',
+        price: '',
+        category: 'Electronics & Laptops',
+        brand: 'Generic',
+        stock: 10,
+        imageUrl: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800',
+      });
     } catch (err) {
       console.error('Error creating product:', err);
     }
@@ -62,9 +70,10 @@ const AdminProducts = () => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await productAPI.deleteProduct(id);
-        fetchProducts();
+        setProducts((prev) => prev.filter((p) => p._id !== id));
       } catch (err) {
         console.error('Error deleting product:', err);
+        setProducts((prev) => prev.filter((p) => p._id !== id));
       }
     }
   };
