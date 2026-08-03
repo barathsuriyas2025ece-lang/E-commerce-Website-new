@@ -125,22 +125,31 @@ export const aiAPI = {
     try {
       return await api.post('/ai/query', payload);
     } catch (err) {
-      const msg = payload.message.toLowerCase();
-      let text = "I'm your AI Shopping Assistant! I can help you find laptops, compare products, and track orders.";
+      const msg = (payload.message || '').toLowerCase().trim();
+      let text = "I'm your AI Shopping Assistant! I can help you find products, compare specs, track orders, and apply promo codes.";
       let action = null;
 
-      if (msg.includes('laptop') || msg.includes('phone') || msg.includes('under')) {
-        text = "Here are matching products from our catalog under your budget:";
+      if (msg === 'hi' || msg === 'hello' || msg === 'hey') {
+        text = "Hello! 👋 I'm your NexusMart AI Shopping Assistant. How can I help you today?";
+        action = { type: 'GREETING', payload: {} };
+      } else if (msg.includes('laptop') || msg.includes('phone') || msg.includes('under') || msg.includes('headphone') || msg.includes('show') || msg.includes('find')) {
+        text = "Here are matching top-rated products from our catalog under your specified budget:";
         action = { type: 'SEARCH_PRODUCTS', payload: {} };
-      } else if (msg.includes('compare')) {
-        text = "I've opened the product comparison matrix for you:";
+      } else if (msg.includes('compare') || msg.includes('vs')) {
+        text = "I've opened the interactive side-by-side product comparison matrix for you:";
         action = { type: 'COMPARE_PRODUCTS', payload: {} };
-      } else if (msg.includes('order') || msg.includes('track')) {
-        text = "📦 Your Order #10231 has been shipped via Express Logistics (Tracking: TRK-98471203). Arrival expected tomorrow.";
+      } else if (msg.includes('order') || msg.includes('track') || msg.includes('package')) {
+        text = "📦 **Order Status for Order #10231**:\n\n- **Status**: Shipped\n- **Courier**: Express Logistics\n- **Tracking ID**: TRK-98471203\n- **Estimated Arrival**: Tomorrow by 5 PM";
         action = { type: 'TRACK_ORDER', payload: {} };
-      } else if (msg.includes('coupon') || msg.includes('save')) {
-        text = "Applied promo coupon SAVE10 to your cart!";
+      } else if (msg.includes('coupon') || msg.includes('save') || msg.includes('discount')) {
+        text = "🎉 Applied promo code **SAVE10**! Saved 10% on your cart.";
         action = { type: 'APPLY_COUPON', payload: { code: 'SAVE10', discountPercentage: 10 } };
+      } else if (msg.includes('payment') || msg.includes('upi') || msg.includes('cod') || msg.includes('pay')) {
+        text = "💳 **Supported Payment Options**:\n- UPI (Google Pay, PhonePe, Paytm)\n- Credit / Debit Cards (Visa, Mastercard, RuPay)\n- Net Banking\n- Cash on Delivery (COD)";
+        action = { type: 'FAQ_RESPONSE', payload: {} };
+      } else if (msg.includes('return') || msg.includes('refund') || msg.includes('warranty')) {
+        text = "🛡️ **NexusMart Customer Policy**:\n- 30-Day Doorstep Returns & Full Refund\n- 1-Year Official Brand Warranty\n- Free Delivery over ₹999";
+        action = { type: 'FAQ_RESPONSE', payload: {} };
       }
 
       return {
