@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Component } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
@@ -30,6 +30,51 @@ import AdminOrders from './pages/admin/Orders';
 import AdminUsers from './pages/admin/Users';
 import AdminCoupons from './pages/admin/Coupons';
 
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('React ErrorBoundary Caught Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white p-6">
+          <div className="max-w-md w-full glass-panel p-8 rounded-3xl bg-slate-800/90 border border-slate-700 text-center space-y-6 shadow-2xl">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-600/30 border border-indigo-400/30 flex items-center justify-center mx-auto text-indigo-400 text-2xl font-extrabold">
+              ⚡
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-extrabold text-white">NexusMart Recovered Gracefully</h2>
+              <p className="text-xs text-slate-300">
+                A minor rendering glitch occurred. Click below to refresh your session.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                this.setState({ hasError: false });
+                window.location.href = '/';
+              }}
+              className="w-full btn-primary bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 text-xs rounded-xl transition shadow-md cursor-pointer"
+            >
+              Reload Web Application
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Scroll to top helper on navigation
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -41,57 +86,59 @@ const ScrollToTop = () => {
 
 function App() {
   return (
-    <Router>
-      <ScrollToTop />
-      <ThemeProvider>
-        <AuthProvider>
-          <ProductProvider>
-            <CartProvider>
-              <WishlistProvider>
-                <AIProvider>
-                  <div className="min-h-screen flex flex-col justify-between selection:bg-indigo-600 selection:text-white bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
-                    <Navbar />
-                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 flex-1 w-full">
-                      <Routes>
-                        {/* Customer Routes */}
-                        <Route path="/" element={<Home />} />
-                        <Route path="/shop" element={<Shop />} />
-                        <Route path="/product/:id" element={<Product />} />
-                        <Route path="/cart" element={<Cart />} />
-                        <Route path="/checkout" element={<Checkout />} />
-                        <Route path="/orders" element={<Orders />} />
-                        <Route path="/wishlist" element={<Wishlist />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/register" element={<Register />} />
+    <ErrorBoundary>
+      <Router>
+        <ScrollToTop />
+        <ThemeProvider>
+          <AuthProvider>
+            <ProductProvider>
+              <CartProvider>
+                <WishlistProvider>
+                  <AIProvider>
+                    <div className="min-h-screen flex flex-col justify-between selection:bg-indigo-600 selection:text-white bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
+                      <Navbar />
+                      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 flex-1 w-full">
+                        <Routes>
+                          {/* Customer Routes */}
+                          <Route path="/" element={<Home />} />
+                          <Route path="/shop" element={<Shop />} />
+                          <Route path="/product/:id" element={<Product />} />
+                          <Route path="/cart" element={<Cart />} />
+                          <Route path="/checkout" element={<Checkout />} />
+                          <Route path="/orders" element={<Orders />} />
+                          <Route path="/wishlist" element={<Wishlist />} />
+                          <Route path="/profile" element={<Profile />} />
+                          <Route path="/login" element={<Login />} />
+                          <Route path="/register" element={<Register />} />
 
-                        {/* Admin Routes */}
-                        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                        <Route path="/admin/products" element={<AdminProducts />} />
-                        <Route path="/admin/orders" element={<AdminOrders />} />
-                        <Route path="/admin/users" element={<AdminUsers />} />
-                        <Route path="/admin/coupons" element={<AdminCoupons />} />
-                      </Routes>
-                    </main>
+                          {/* Admin Routes */}
+                          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                          <Route path="/admin/products" element={<AdminProducts />} />
+                          <Route path="/admin/orders" element={<AdminOrders />} />
+                          <Route path="/admin/users" element={<AdminUsers />} />
+                          <Route path="/admin/coupons" element={<AdminCoupons />} />
+                        </Routes>
+                      </main>
 
-                    {/* Instant Slide-over Cart Drawer */}
-                    <CartDrawer />
+                      {/* Instant Slide-over Cart Drawer */}
+                      <CartDrawer />
 
-                    {/* Persistent Floating AI Assistant on every page */}
-                    <FloatingAI />
+                      {/* Persistent Floating AI Assistant on every page */}
+                      <FloatingAI />
 
-                    {/* Interactive Product Comparison Modal */}
-                    <CompareProducts />
+                      {/* Interactive Product Comparison Modal */}
+                      <CompareProducts />
 
-                    <Footer />
-                  </div>
-                </AIProvider>
-              </WishlistProvider>
-            </CartProvider>
-          </ProductProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </Router>
+                      <Footer />
+                    </div>
+                  </AIProvider>
+                </WishlistProvider>
+              </CartProvider>
+            </ProductProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

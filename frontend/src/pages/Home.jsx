@@ -170,63 +170,66 @@ const Home = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredOrders.slice(0, 4).map((order) => (
-                <div key={order._id} className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-indigo-300 transition shadow-sm space-y-4">
-                  {/* Header Info */}
-                  <div className="flex items-center justify-between text-xs border-b border-slate-200/60 pb-3">
-                    <div>
-                      <span className="text-slate-500 font-medium">Order ID: </span>
-                      <span className="font-mono font-bold text-slate-900">#{order._id.toString().slice(-6)}</span>
+              {filteredOrders.slice(0, 4).map((order, orderIdx) => {
+                const orderIdStr = (order._id || order.id || `1023${orderIdx}`).toString();
+                return (
+                  <div key={orderIdStr} className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-indigo-300 transition shadow-sm space-y-4">
+                    {/* Header Info */}
+                    <div className="flex items-center justify-between text-xs border-b border-slate-200/60 pb-3">
+                      <div>
+                        <span className="text-slate-500 font-medium">Order ID: </span>
+                        <span className="font-mono font-bold text-slate-900">#{orderIdStr.slice(-6)}</span>
+                      </div>
+                      {getStatusBadge(order.orderStatus)}
                     </div>
-                    {getStatusBadge(order.orderStatus)}
-                  </div>
 
-                  {/* Items Display */}
-                  <div className="space-y-3">
-                    {order.orderItems?.map((item, idx) => {
-                      const pId = item.product || item._id || '';
-                      return (
-                        <div key={idx} className="flex items-center gap-3">
-                          <Link to={pId ? `/product/${pId}` : '/shop'} className="shrink-0">
-                            <img
-                              src={item.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'}
-                              alt={item.name}
-                              className="w-12 h-12 rounded-xl object-cover border border-slate-200 bg-white hover:opacity-80 transition cursor-pointer"
-                            />
-                          </Link>
-                          <div className="flex-1 min-w-0 text-xs">
-                            <Link to={pId ? `/product/${pId}` : '/shop'} className="hover:text-indigo-600 transition">
-                              <h4 className="font-bold text-slate-900 truncate hover:text-indigo-600 cursor-pointer">{item.name}</h4>
+                    {/* Items Display */}
+                    <div className="space-y-3">
+                      {order.orderItems?.map((item, idx) => {
+                        const pId = item.product || item._id || item.id || '';
+                        return (
+                          <div key={idx} className="flex items-center gap-3">
+                            <Link to={pId ? `/product/${pId}` : '/shop'} className="shrink-0">
+                              <img
+                                src={item.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'}
+                                alt={item.name || 'Product'}
+                                className="w-12 h-12 rounded-xl object-cover border border-slate-200 bg-white hover:opacity-80 transition cursor-pointer"
+                              />
                             </Link>
-                            <p className="text-slate-500 text-[11px]">Qty: {item.quantity} × ₹{item.price?.toLocaleString()}</p>
+                            <div className="flex-1 min-w-0 text-xs">
+                              <Link to={pId ? `/product/${pId}` : '/shop'} className="hover:text-indigo-600 transition">
+                                <h4 className="font-bold text-slate-900 truncate hover:text-indigo-600 cursor-pointer">{item.name}</h4>
+                              </Link>
+                              <p className="text-slate-500 text-[11px]">Qty: {item.quantity} × ₹{item.price?.toLocaleString()}</p>
+                            </div>
+                            <div className="text-xs font-extrabold text-slate-900">
+                              ₹{((item.price || 0) * (item.quantity || 1)).toLocaleString()}
+                            </div>
                           </div>
-                          <div className="text-xs font-extrabold text-slate-900">
-                            ₹{(item.price * item.quantity).toLocaleString()}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Courier & Tracking Footer */}
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 text-xs text-slate-600">
-                    <div>
-                      <span className="text-slate-500">Tracking: </span>
-                      <span className="font-mono font-bold text-slate-800">{order.trackingNumber || 'TRK-98471203'}</span>
+                        );
+                      })}
                     </div>
-                    <button
-                      onClick={() => {
-                        setIsAiOpen(true);
-                        sendMessage(`Where is my order ${order._id}?`);
-                      }}
-                      className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1"
-                    >
-                      <Bot className="w-3.5 h-3.5 text-indigo-600" />
-                      <span>Track via AI</span>
-                    </button>
+
+                    {/* Courier & Tracking Footer */}
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 text-xs text-slate-600">
+                      <div>
+                        <span className="text-slate-500">Tracking: </span>
+                        <span className="font-mono font-bold text-slate-800">{order.trackingNumber || 'TRK-98471203'}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setIsAiOpen(true);
+                          sendMessage(`Where is my order #${orderIdStr.slice(-6)}?`);
+                        }}
+                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1"
+                      >
+                        <Bot className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Track via AI</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

@@ -83,16 +83,17 @@ const Orders = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {filteredOrders.map((order) => {
+          {filteredOrders.map((order, orderIdx) => {
+            const orderIdStr = (order._id || order.id || `1023${orderIdx}`).toString();
             const currentStepIdx = statusSteps.indexOf(order.orderStatus) >= 0 ? statusSteps.indexOf(order.orderStatus) : 1;
 
             return (
-              <div key={order._id} className="glass-panel p-6 sm:p-8 rounded-3xl space-y-6 bg-white border border-slate-200 shadow-sm">
+              <div key={orderIdStr} className="glass-panel p-6 sm:p-8 rounded-3xl space-y-6 bg-white border border-slate-200 shadow-sm">
                 {/* Order Top Bar */}
                 <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-4 text-xs gap-4">
                   <div>
                     <span className="text-slate-500 font-medium">Order ID: </span>
-                    <span className="font-mono font-bold text-indigo-600">#{order._id.toString().slice(-6)}</span>
+                    <span className="font-mono font-bold text-indigo-600">#{orderIdStr.slice(-6)}</span>
                   </div>
                   <div>
                     <span className="text-slate-500 font-medium">Courier: </span>
