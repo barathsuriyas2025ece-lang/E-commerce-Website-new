@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Heart, User, Sun, Moon, Search, Sparkles, Shield } from 'lucide-react';
+import { ShoppingBag, Heart, User, Sun, Moon, Search, Sparkles, Shield, Package } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -84,6 +84,15 @@ const Navbar = () => {
                 {wishlistCount}
               </span>
             )}
+          </Link>
+
+          {/* Orders Icon */}
+          <Link
+            to="/orders"
+            className="p-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition relative"
+            title="My Orders & Tracking"
+          >
+            <Package className="w-5 h-5 text-indigo-600" />
           </Link>
 
           {/* Cart Icon */}
