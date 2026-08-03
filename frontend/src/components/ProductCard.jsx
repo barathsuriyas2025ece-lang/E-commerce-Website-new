@@ -11,7 +11,8 @@ const ProductCard = ({ product }) => {
   const { setActiveCompareItems } = useAI();
   const navigate = useNavigate();
 
-  const isLiked = isInWishlist(product._id || product.id);
+  const productId = product._id || product.id || '';
+  const isLiked = isInWishlist(productId);
 
   const discount =
     product.originalPrice && product.originalPrice > product.price
@@ -20,25 +21,32 @@ const ProductCard = ({ product }) => {
 
   const handleBuyNow = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     addToCart(product);
     setIsCartOpen(true);
     navigate('/checkout');
   };
 
+  const handleAddToCart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart(product);
+  };
+
   return (
     <div className="glass-panel group overflow-hidden flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl bg-white border border-slate-200 rounded-2xl">
-      {/* Product Image & Badges */}
+      {/* Product Image Container (100% Clickable Link to Product Details) */}
       <div className="relative aspect-square overflow-hidden bg-slate-50">
-        <Link to={`/product/${product._id}`}>
+        <Link to={`/product/${productId}`} className="block w-full h-full cursor-pointer">
           <img
             src={product.images?.[0] || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'}
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
           />
         </Link>
 
         {/* Floating Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 pointer-events-none">
           {product.isFeatured && (
             <span className="badge bg-amber-500 text-white font-extrabold shadow-sm flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md">
               <Zap className="w-3 h-3 fill-current" /> Top Choice
@@ -56,9 +64,10 @@ const ProductCard = ({ product }) => {
           <button
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               toggleWishlist(product);
             }}
-            className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md shadow-md transition ${
+            className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md shadow-md transition cursor-pointer ${
               isLiked ? 'bg-pink-600 text-white' : 'bg-white/90 text-slate-700 hover:text-pink-600'
             }`}
             title="Add to Wishlist"
@@ -69,9 +78,10 @@ const ProductCard = ({ product }) => {
           <button
             onClick={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               setActiveCompareItems([product]);
             }}
-            className="w-9 h-9 rounded-full bg-white/90 text-slate-700 hover:text-indigo-600 backdrop-blur-md shadow-md flex items-center justify-center transition"
+            className="w-9 h-9 rounded-full bg-white/90 text-slate-700 hover:text-indigo-600 backdrop-blur-md shadow-md flex items-center justify-center transition cursor-pointer"
             title="Compare Product"
           >
             <Scale className="w-4 h-4" />
@@ -91,8 +101,8 @@ const ProductCard = ({ product }) => {
             </span>
           </div>
 
-          <Link to={`/product/${product._id}`}>
-            <h3 className="text-sm font-bold text-slate-900 hover:text-indigo-600 transition line-clamp-2 leading-tight mt-1">
+          <Link to={`/product/${productId}`} className="block group-hover:text-indigo-600">
+            <h3 className="text-sm font-bold text-slate-900 hover:text-indigo-600 transition line-clamp-2 leading-tight mt-1 cursor-pointer">
               {product.name}
             </h3>
           </Link>
@@ -128,7 +138,7 @@ const ProductCard = ({ product }) => {
 
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => addToCart(product)}
+              onClick={handleAddToCart}
               className="btn-secondary bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-1.5 px-2 text-xs rounded-xl inline-flex items-center justify-center gap-1 shadow-sm transition cursor-pointer"
             >
               <ShoppingCart className="w-3.5 h-3.5 text-slate-700" />

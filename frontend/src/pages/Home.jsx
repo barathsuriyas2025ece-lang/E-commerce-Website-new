@@ -183,22 +183,29 @@ const Home = () => {
 
                   {/* Items Display */}
                   <div className="space-y-3">
-                    {order.orderItems?.map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-3">
-                        <img
-                          src={item.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'}
-                          alt={item.name}
-                          className="w-12 h-12 rounded-xl object-cover border border-slate-200 bg-white"
-                        />
-                        <div className="flex-1 min-w-0 text-xs">
-                          <h4 className="font-bold text-slate-900 truncate">{item.name}</h4>
-                          <p className="text-slate-500 text-[11px]">Qty: {item.quantity} × ₹{item.price?.toLocaleString()}</p>
+                    {order.orderItems?.map((item, idx) => {
+                      const pId = item.product || item._id || '';
+                      return (
+                        <div key={idx} className="flex items-center gap-3">
+                          <Link to={pId ? `/product/${pId}` : '/shop'} className="shrink-0">
+                            <img
+                              src={item.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'}
+                              alt={item.name}
+                              className="w-12 h-12 rounded-xl object-cover border border-slate-200 bg-white hover:opacity-80 transition cursor-pointer"
+                            />
+                          </Link>
+                          <div className="flex-1 min-w-0 text-xs">
+                            <Link to={pId ? `/product/${pId}` : '/shop'} className="hover:text-indigo-600 transition">
+                              <h4 className="font-bold text-slate-900 truncate hover:text-indigo-600 cursor-pointer">{item.name}</h4>
+                            </Link>
+                            <p className="text-slate-500 text-[11px]">Qty: {item.quantity} × ₹{item.price?.toLocaleString()}</p>
+                          </div>
+                          <div className="text-xs font-extrabold text-slate-900">
+                            ₹{(item.price * item.quantity).toLocaleString()}
+                          </div>
                         </div>
-                        <div className="text-xs font-extrabold text-slate-900">
-                          ₹{(item.price * item.quantity).toLocaleString()}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   {/* Courier & Tracking Footer */}

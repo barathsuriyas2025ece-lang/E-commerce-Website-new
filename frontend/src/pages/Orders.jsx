@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Package, CheckCircle2, Clock, Truck } from 'lucide-react';
 import { orderAPI, fallbackSampleOrders } from '../services/api';
 
@@ -126,18 +127,29 @@ const Orders = () => {
 
                 {/* Items List */}
                 <div className="space-y-3 pt-2">
-                  {order.orderItems?.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-4 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                      <img src={item.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'} alt={item.name} className="w-14 h-14 rounded-xl object-cover bg-white border border-slate-200" />
-                      <div className="flex-1 text-xs">
-                        <h4 className="font-bold text-slate-900 text-sm">{item.name}</h4>
-                        <p className="text-slate-500 mt-0.5">Qty: {item.quantity} × ₹{item.price?.toLocaleString()}</p>
+                  {order.orderItems?.map((item, idx) => {
+                    const pId = item.product || item._id || '';
+                    return (
+                      <div key={idx} className="flex items-center gap-4 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                        <Link to={pId ? `/product/${pId}` : '/shop'} className="shrink-0">
+                          <img
+                            src={item.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'}
+                            alt={item.name}
+                            className="w-14 h-14 rounded-xl object-cover bg-white border border-slate-200 hover:opacity-80 transition cursor-pointer"
+                          />
+                        </Link>
+                        <div className="flex-1 text-xs">
+                          <Link to={pId ? `/product/${pId}` : '/shop'} className="hover:text-indigo-600 transition">
+                            <h4 className="font-bold text-slate-900 text-sm cursor-pointer hover:text-indigo-600">{item.name}</h4>
+                          </Link>
+                          <p className="text-slate-500 mt-0.5">Qty: {item.quantity} × ₹{item.price?.toLocaleString()}</p>
+                        </div>
+                        <div className="text-sm font-extrabold text-slate-900">
+                          ₹{(item.price * item.quantity).toLocaleString()}
+                        </div>
                       </div>
-                      <div className="text-sm font-extrabold text-slate-900">
-                        ₹{(item.price * item.quantity).toLocaleString()}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
