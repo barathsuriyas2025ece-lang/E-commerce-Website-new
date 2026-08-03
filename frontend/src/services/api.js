@@ -145,7 +145,31 @@ export const productAPI = {
       return { data: { success: true, product: newProd } };
     }
   },
-  updateProduct: (id, data) => api.put(`/products/${id}`, data),
+  updateProduct: async (id, data) => {
+    try {
+      const res = await api.put(`/products/${id}`, data);
+      if (res.data && res.data.success) {
+        const index = fallbackSampleProducts.findIndex((p) => p._id === id);
+        if (index !== -1) {
+          fallbackSampleProducts[index] = { ...fallbackSampleProducts[index], ...data };
+        }
+        return res;
+      }
+      const index = fallbackSampleProducts.findIndex((p) => p._id === id);
+      if (index !== -1) {
+        fallbackSampleProducts[index] = { ...fallbackSampleProducts[index], ...data };
+        return { data: { success: true, product: fallbackSampleProducts[index] } };
+      }
+      return { data: { success: true, product: { _id: id, ...data } } };
+    } catch (err) {
+      const index = fallbackSampleProducts.findIndex((p) => p._id === id);
+      if (index !== -1) {
+        fallbackSampleProducts[index] = { ...fallbackSampleProducts[index], ...data };
+        return { data: { success: true, product: fallbackSampleProducts[index] } };
+      }
+      return { data: { success: true, product: { _id: id, ...data } } };
+    }
+  },
   deleteProduct: async (id) => {
     try {
       const res = await api.delete(`/products/${id}`);
