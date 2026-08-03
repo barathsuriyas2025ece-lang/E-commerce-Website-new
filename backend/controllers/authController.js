@@ -213,7 +213,7 @@ const adminLogin = async (req, res) => {
     }
 
     const inputPass = String(password).trim();
-    const validPasswords = ['barath12345', 'admin123', 'admin', process.env.ADMIN_PASSWORD || 'barath12345'];
+    const validPasswords = ['admin123', process.env.ADMIN_PASSWORD || 'admin123'];
 
     if (!validPasswords.includes(inputPass)) {
       return res.status(401).json({ success: false, message: 'Invalid Admin Passcode. Access Denied.' });
