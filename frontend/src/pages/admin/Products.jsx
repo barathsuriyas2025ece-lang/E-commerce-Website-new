@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Package, Pencil, Tag, Filter } from 'lucide-react';
 import { productAPI, fallbackSampleProducts } from '../../services/api';
+import { useNotifications } from '../../context/NotificationContext';
 
 const categoriesList = [
   'All',
@@ -61,6 +62,8 @@ const AdminProducts = () => {
     });
   };
 
+  const { addNotification } = useNotifications();
+
   const handleCreateProduct = async (e) => {
     e.preventDefault();
     try {
@@ -91,6 +94,13 @@ const AdminProducts = () => {
       };
 
       setProducts((prev) => [createdProduct, ...prev]);
+      if (addNotification) {
+        addNotification({
+          title: '✨ New Product Added',
+          subtitle: `${formData.name} is now live in store at ₹${priceNum.toLocaleString()}`,
+          type: 'info',
+        });
+      }
       setIsAddModalOpen(false);
       resetFormData();
     } catch (err) {
@@ -147,6 +157,14 @@ const AdminProducts = () => {
         prev.map((p) => (p._id === editingId ? { ...p, ...updatedData } : p))
       );
 
+      if (addNotification) {
+        addNotification({
+          title: '🔥 Price & Details Updated',
+          subtitle: `${formData.name} price updated to ₹${priceNum.toLocaleString()}`,
+          type: 'promo',
+        });
+      }
+
       setIsEditModalOpen(false);
       setEditingId(null);
       resetFormData();
@@ -163,6 +181,13 @@ const AdminProducts = () => {
       } catch (err) {
         console.error('Error deleting product:', err);
         setProducts((prev) => prev.filter((p) => p._id !== id));
+      }
+      if (addNotification) {
+        addNotification({
+          title: '📦 Inventory Updated',
+          subtitle: `Product removed from store catalog by admin`,
+          type: 'info',
+        });
       }
     }
   };

@@ -1,28 +1,43 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Package, Tag, Sparkles, Shield, ShoppingCart, Bell, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Package, Tag, Sparkles, ShoppingCart, CheckCircle2, BellRing, Info } from 'lucide-react';
 
 const NotificationContext = createContext();
 
 const initialNotifications = [
-  { id: 1, title: '📦 Order #TRK-98471203 Shipped!', subtitle: 'In transit via Express Logistics', time: 'Just now', iconType: 'package', read: false },
-  { id: 2, title: '🔥 Flash Sale Active', subtitle: '20% off all laptops with code SAVE10', time: '12m ago', iconType: 'tag', read: false },
-  { id: 3, title: '🤖 AI Shopping Assistant Active', subtitle: 'Natural voice & search commands enabled', time: '1h ago', iconType: 'sparkles', read: true },
+  { id: 1, title: 'Store Update: New Arrival', subtitle: 'MacBook Air M3 Edition now available', time: 'Today', iconType: 'package', read: false },
+  { id: 2, title: 'Price Drop Alert', subtitle: 'Special 15% discount on Sony Headphones', time: 'Yesterday', iconType: 'tag', read: true },
 ];
 
 export const NotificationProvider = ({ children }) => {
-  const [notifications, setNotifications] = useState(initialNotifications);
-  const [activeToast, setActiveToast] = useState(null);
-  const [hasUnreadPulse, setHasUnreadPulse] = useState(true);
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem('nexusmart_notifications');
+      return saved && saved !== 'undefined' ? JSON.parse(saved) : initialNotifications;
+    } catch (e) {
+      return initialNotifications;
+    }
+  });
 
-  // Helper to add a real-time notification
+  const [activeToast, setActiveToast] = useState(null);
+  const [hasUnreadPulse, setHasUnreadPulse] = useState(() => notifications.some((n) => !n.read));
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('nexusmart_notifications', JSON.stringify(notifications));
+    } catch (e) {
+      console.warn('Failed to save notifications:', e);
+    }
+  }, [notifications]);
+
+  // Real-time notification trigger method (Invoked strictly upon real admin/user actions)
   const addNotification = useCallback(({ title, subtitle, type = 'info' }) => {
     const newNotif = {
       id: Date.now(),
       title,
-      subtitle: subtitle || 'NexusMart Realtime Event System',
+      subtitle: subtitle || 'Store Update',
       time: 'Just now',
       type,
-      iconType: type === 'order' ? 'package' : type === 'cart' ? 'cart' : type === 'promo' ? 'tag' : 'sparkles',
+      iconType: type === 'order' ? 'package' : type === 'cart' ? 'cart' : type === 'promo' ? 'tag' : 'info',
       read: false,
     };
 
@@ -35,25 +50,6 @@ export const NotificationProvider = ({ children }) => {
       setActiveToast((current) => (current?.id === newNotif.id ? null : current));
     }, 4000);
   }, []);
-
-  // Real-time periodic live notification simulation while user browses
-  useEffect(() => {
-    const realtimeEvents = [
-      { title: '⚡ Flash Discount Alert', subtitle: 'Exclusive 15% price drop on Sony Headphones', type: 'promo' },
-      { title: '📦 Real-Time Order Tracking', subtitle: 'Driver is 5 mins away with your delivery', type: 'order' },
-      { title: '🛡️ Account Security Verified', subtitle: 'Session encrypted with 256-bit SSL', type: 'info' },
-      { title: '🎉 Recommended Deal for You', subtitle: 'MacBook Air M3 Pro Edition back in stock', type: 'promo' },
-    ];
-
-    let eventIdx = 0;
-    const interval = setInterval(() => {
-      const event = realtimeEvents[eventIdx % realtimeEvents.length];
-      addNotification(event);
-      eventIdx++;
-    }, 35000); // Trigger live notification every 35s
-
-    return () => clearInterval(interval);
-  }, [addNotification]);
 
   const markAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -81,33 +77,31 @@ export const NotificationProvider = ({ children }) => {
     >
       {children}
 
-      {/* 🚀 Floating Real-Time Live Toast Notification */}
+      {/* 🌟 Simple, Professional Floating Real-Time Toast */}
       {activeToast && (
-        <div className="fixed bottom-5 right-5 z-50 max-w-sm w-full glass-panel p-4 rounded-2xl bg-slate-900/95 text-white border border-indigo-500/40 shadow-2xl animate-slide-up flex items-start gap-3 backdrop-blur-xl">
-          <div className="w-9 h-9 rounded-xl bg-indigo-600/30 border border-indigo-400/40 flex items-center justify-center shrink-0 text-indigo-400 mt-0.5">
+        <div className="fixed bottom-5 right-5 z-50 max-w-sm w-full bg-white border border-slate-200 text-slate-900 p-4 rounded-2xl shadow-2xl animate-slide-up flex items-start gap-3 border-l-4 border-l-indigo-600">
+          <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5 font-bold">
             {activeToast.iconType === 'package' ? (
-              <Package className="w-5 h-5" />
-            ) : activeToast.iconType === 'cart' ? (
-              <ShoppingCart className="w-5 h-5" />
+              <Package className="w-4 h-4" />
             ) : activeToast.iconType === 'tag' ? (
-              <Tag className="w-5 h-5 text-amber-400" />
+              <Tag className="w-4 h-4 text-amber-600" />
             ) : (
-              <Sparkles className="w-5 h-5 text-indigo-400 animate-spin" />
+              <BellRing className="w-4 h-4 text-indigo-600" />
             )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800">
-                REALTIME EVENT
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                STORE NOTIFICATION
               </span>
-              <span className="text-[10px] text-slate-400">{activeToast.time}</span>
+              <span className="text-[10px] text-slate-400 font-medium">{activeToast.time}</span>
             </div>
-            <h4 className="font-extrabold text-xs text-white mt-1 leading-snug">{activeToast.title}</h4>
-            <p className="text-[11px] text-slate-300 mt-0.5 truncate">{activeToast.subtitle}</p>
+            <h4 className="font-bold text-xs text-slate-900 mt-1 leading-snug">{activeToast.title}</h4>
+            <p className="text-[11px] text-slate-500 mt-0.5 truncate">{activeToast.subtitle}</p>
           </div>
           <button
             onClick={() => setActiveToast(null)}
-            className="text-slate-400 hover:text-white p-1 rounded-lg transition"
+            className="text-slate-400 hover:text-slate-700 p-1 transition cursor-pointer text-xs font-bold"
           >
             ×
           </button>
