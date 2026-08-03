@@ -13,6 +13,7 @@ import Footer from './components/Footer';
 import CartDrawer from './components/CartDrawer';
 import FloatingAI from './widgets/FloatingAI';
 import CompareProducts from './comparison/CompareProducts';
+import MobileBottomNav from './components/MobileBottomNav';
 
 import Home from './pages/Home';
 import Shop from './pages/Shop';
@@ -132,6 +133,9 @@ function App() {
 
                         {/* Interactive Product Comparison Modal */}
                         <CompareProducts />
+
+                        {/* Mobile Bottom Navigation Bar */}
+                        <MobileBottomNav />
 
                         <Footer />
                       </div>
