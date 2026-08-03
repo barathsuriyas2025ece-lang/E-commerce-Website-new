@@ -6,6 +6,8 @@ import { useWishlist } from '../context/WishlistContext';
 import { useAI } from '../context/AIContext';
 
 const ProductCard = ({ product }) => {
+  if (!product) return null;
+
   const { addToCart, setIsCartOpen } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { setActiveCompareItems } = useAI();

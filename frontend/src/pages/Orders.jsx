@@ -58,19 +58,19 @@ const Orders = () => {
             onClick={() => setFilterTab('all')}
             className={`px-4 py-2 rounded-xl transition ${filterTab === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            All ({orders.length})
+            All ({(orders || []).length})
           </button>
           <button
             onClick={() => setFilterTab('in_progress')}
             className={`px-4 py-2 rounded-xl transition ${filterTab === 'in_progress' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            In Process ({orders.filter((o) => (o.orderStatus || '').toLowerCase() !== 'delivered').length})
+            In Process ({(orders || []).filter((o) => (o?.orderStatus || '').toLowerCase() !== 'delivered').length})
           </button>
           <button
             onClick={() => setFilterTab('delivered')}
             className={`px-4 py-2 rounded-xl transition ${filterTab === 'delivered' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            Delivered ({orders.filter((o) => (o.orderStatus || '').toLowerCase() === 'delivered').length})
+            Delivered ({(orders || []).filter((o) => (o?.orderStatus || '').toLowerCase() === 'delivered').length})
           </button>
         </div>
       </div>

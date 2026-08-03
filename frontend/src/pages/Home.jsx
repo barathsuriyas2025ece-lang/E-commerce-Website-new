@@ -138,19 +138,19 @@ const Home = () => {
                   onClick={() => setOrderFilter('all')}
                   className={`px-3 py-1.5 rounded-lg transition ${orderFilter === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                 >
-                  All ({myOrders.length})
+                  All ({(myOrders || []).length})
                 </button>
                 <button
                   onClick={() => setOrderFilter('in_progress')}
                   className={`px-3 py-1.5 rounded-lg transition ${orderFilter === 'in_progress' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                 >
-                  In Process ({myOrders.filter((o) => (o.orderStatus || '').toLowerCase() !== 'delivered').length})
+                  In Process ({(myOrders || []).filter((o) => (o?.orderStatus || '').toLowerCase() !== 'delivered').length})
                 </button>
                 <button
                   onClick={() => setOrderFilter('delivered')}
                   className={`px-3 py-1.5 rounded-lg transition ${orderFilter === 'delivered' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
                 >
-                  Delivered ({myOrders.filter((o) => (o.orderStatus || '').toLowerCase() === 'delivered').length})
+                  Delivered ({(myOrders || []).filter((o) => (o?.orderStatus || '').toLowerCase() === 'delivered').length})
                 </button>
               </div>
 
