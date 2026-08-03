@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, ArrowRight, Laptop, Headphones, Shirt, Home as HomeIcon, Zap, Bot, Package, Clock, Truck, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Laptop, Headphones, Shirt, Home as HomeIcon, Zap, Bot, Package, Clock, Truck, CheckCircle2, ChevronRight, ShieldCheck } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { useProducts } from '../context/ProductContext';
 import { useAI } from '../context/AIContext';
