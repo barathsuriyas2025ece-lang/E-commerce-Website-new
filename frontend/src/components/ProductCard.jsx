@@ -1,6 +1,6 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Heart, Star, Scale, Truck, Zap, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ShoppingCart, Heart, Star, Scale, Truck, Check } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAI } from '../context/AIContext';
@@ -8,10 +8,9 @@ import { useAI } from '../context/AIContext';
 const ProductCard = ({ product }) => {
   if (!product) return null;
 
-  const { addToCart, setIsCartOpen } = useCart();
+  const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { setActiveCompareItems } = useAI();
-  const navigate = useNavigate();
 
   const productId = product._id || product.id || '';
   const isLiked = isInWishlist(productId);
@@ -21,23 +20,17 @@ const ProductCard = ({ product }) => {
       ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
       : null;
 
-  const handleBuyNow = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addToCart(product);
-    setIsCartOpen(true);
-    navigate('/checkout');
-  };
-
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
     addToCart(product);
   };
 
+  const brandName = product.brand || product.category || 'NexusMart';
+
   return (
-    <div className="glass-panel group overflow-hidden flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl bg-white border border-slate-200 rounded-2xl">
-      {/* Product Image Container (100% Clickable Link to Product Details) */}
+    <div className="glass-panel group overflow-hidden flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl bg-white border border-slate-200 rounded-2xl relative">
+      {/* Product Image Container */}
       <div className="relative aspect-square overflow-hidden bg-slate-50">
         <Link to={`/product/${productId}`} className="block w-full h-full cursor-pointer">
           <img
@@ -48,12 +41,7 @@ const ProductCard = ({ product }) => {
         </Link>
 
         {/* Floating Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 pointer-events-none">
-          {product.isFeatured && (
-            <span className="badge bg-amber-500 text-white font-extrabold shadow-sm flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md">
-              <Zap className="w-3 h-3 fill-current" /> Top Choice
-            </span>
-          )}
+        <div className="absolute top-3 left-3 flex flex-col gap-1 z-10 pointer-events-none">
           {discount && (
             <span className="badge bg-red-600 text-white font-extrabold text-[10px] px-2 py-0.5 rounded-md shadow-sm">
               {discount}% OFF
@@ -61,18 +49,18 @@ const ProductCard = ({ product }) => {
           )}
         </div>
 
-        {/* Floating Action Buttons */}
-        <div className="absolute top-3 right-3 flex flex-col gap-2 z-10 opacity-90 group-hover:opacity-100 transition-opacity">
+        {/* Floating Heart & Compare Actions */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
           <button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               toggleWishlist(product);
             }}
-            className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md shadow-md transition cursor-pointer ${
+            className={`w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-md shadow-sm transition cursor-pointer ${
               isLiked ? 'bg-pink-600 text-white' : 'bg-white/90 text-slate-700 hover:text-pink-600'
             }`}
-            title="Add to Wishlist"
+            title="Wishlist"
           >
             <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
           </button>
@@ -83,78 +71,69 @@ const ProductCard = ({ product }) => {
               e.stopPropagation();
               setActiveCompareItems([product]);
             }}
-            className="w-9 h-9 rounded-full bg-white/90 text-slate-700 hover:text-indigo-600 backdrop-blur-md shadow-md flex items-center justify-center transition cursor-pointer"
-            title="Compare Product"
+            className="w-8 h-8 rounded-full bg-white/90 text-slate-700 hover:text-indigo-600 backdrop-blur-md shadow-sm flex items-center justify-center transition cursor-pointer"
+            title="Compare"
           >
-            <Scale className="w-4 h-4" />
+            <Scale className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Product Body */}
+      {/* Product Information */}
       <div className="p-4 flex-1 flex flex-col justify-between gap-3 bg-white">
         <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
-              {product.category || 'Electronics'}
-            </span>
-            <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3" /> Verified
-            </span>
+          {/* Brand Name */}
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            {brandName}
           </div>
 
-          <Link to={`/product/${productId}`} className="block group-hover:text-indigo-600">
-            <h3 className="text-sm font-bold text-slate-900 hover:text-indigo-600 transition line-clamp-2 leading-tight mt-1 cursor-pointer">
+          {/* Title */}
+          <Link to={`/product/${productId}`} className="block">
+            <h3 className="text-xs sm:text-sm font-bold text-slate-900 hover:text-indigo-600 transition line-clamp-2 leading-snug cursor-pointer">
               {product.name}
             </h3>
           </Link>
 
-          {/* Rating */}
-          <div className="flex items-center gap-1.5 pt-1">
-            <div className="flex items-center text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-              <Star className="w-3 h-3 fill-current" />
-              <span className="text-xs font-extrabold ml-1 text-slate-800">{product.rating || 4.5}</span>
+          {/* Rating & Reviews */}
+          <div className="flex items-center gap-1.5 pt-0.5">
+            <div className="flex items-center text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 text-xs font-extrabold">
+              <Star className="w-3 h-3 fill-current mr-0.5" />
+              <span>{product.rating || 4.8}</span>
             </div>
-            <span className="text-[11px] text-slate-400 font-medium">({product.numReviews || 128} reviews)</span>
+            <span className="text-[11px] text-slate-400 font-medium">({product.numReviews || 248})</span>
           </div>
 
-          {/* Amazon Express Delivery Badge */}
-          <div className="flex items-center gap-1 text-[11px] text-slate-600 pt-1 font-medium">
-            <Truck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span><strong className="text-emerald-700">FREE Delivery</strong> by Tomorrow</span>
+          {/* Delivery & Stock */}
+          <div className="flex flex-wrap items-center justify-between text-[11px] pt-1 gap-1">
+            <span className="text-emerald-700 font-bold flex items-center gap-0.5">
+              <Check className="w-3 h-3 text-emerald-600" /> In Stock
+            </span>
+            <span className="text-slate-500 font-medium flex items-center gap-1">
+              <Truck className="w-3 h-3 text-indigo-600" /> FREE Delivery Tomorrow
+            </span>
           </div>
         </div>
 
-        {/* Price & Action Buttons */}
+        {/* Pricing & Add to Cart */}
         <div className="pt-2 border-t border-slate-100 space-y-2">
           <div className="flex items-baseline gap-2">
-            <div className="text-lg font-extrabold text-slate-900">
+            <span className="text-base sm:text-lg font-extrabold text-slate-900">
               ₹{product.price?.toLocaleString()}
-            </div>
+            </span>
             {product.originalPrice > product.price && (
-              <div className="text-xs text-slate-400 line-through">
+              <span className="text-xs text-slate-400 line-through">
                 ₹{product.originalPrice?.toLocaleString()}
-              </div>
+              </span>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={handleAddToCart}
-              className="btn-secondary bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-1.5 px-2 text-xs rounded-xl inline-flex items-center justify-center gap-1 shadow-sm transition cursor-pointer"
-            >
-              <ShoppingCart className="w-3.5 h-3.5 text-slate-700" />
-              <span>Add to Cart</span>
-            </button>
-
-            <button
-              onClick={handleBuyNow}
-              className="btn-primary bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-slate-950 font-extrabold py-1.5 px-2 text-xs rounded-xl inline-flex items-center justify-center gap-1 shadow-sm transition cursor-pointer"
-            >
-              <Zap className="w-3.5 h-3.5 text-slate-950 fill-current" />
-              <span>Buy Now</span>
-            </button>
-          </div>
+          <button
+            onClick={handleAddToCart}
+            className="w-full btn-primary bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold py-2 px-3 text-xs rounded-xl inline-flex items-center justify-center gap-2 shadow-sm transition cursor-pointer"
+          >
+            <ShoppingCart className="w-4 h-4 text-white" />
+            <span>Add to Cart</span>
+          </button>
         </div>
       </div>
     </div>

@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, ArrowRight, Laptop, Headphones, Shirt, Home as HomeIcon, Zap, Bot, Truck, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Laptop, Headphones, Shirt, Home as HomeIcon, Zap, Star, ShieldCheck, Truck, RefreshCw, Award, CheckCircle2, Clock, Mail } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { useProducts } from '../context/ProductContext';
-import { useAI } from '../context/AIContext';
+import { useAuth } from '../context/AuthContext';
 
 const categories = [
   { name: 'Electronics & Laptops', slug: 'electronics', icon: Laptop, color: 'bg-indigo-600 text-white' },
@@ -12,177 +12,251 @@ const categories = [
   { name: 'Home & Living', slug: 'home', icon: HomeIcon, color: 'bg-emerald-600 text-white' },
 ];
 
+const featuredBrands = [
+  { name: 'Apple', logo: 'https://cdn-icons-png.flaticon.com/512/0/747.png' },
+  { name: 'Sony', logo: 'https://cdn-icons-png.flaticon.com/512/882/882747.png' },
+  { name: 'Samsung', logo: 'https://cdn-icons-png.flaticon.com/512/882/882736.png' },
+  { name: 'Nike', logo: 'https://cdn-icons-png.flaticon.com/512/732/732229.png' },
+  { name: 'Asus', logo: 'https://cdn-icons-png.flaticon.com/512/882/882727.png' },
+];
+
+const customerReviews = [
+  { name: 'Barath Suriya', rating: 5, comment: 'Exceptional delivery speed! The MacBook M3 arrived original and brand new within 24 hours.', location: 'India' },
+  { name: 'Ananya Sharma', rating: 5, comment: 'Loved the smooth checkout experience and discount coupons. Best e-commerce storefront!', location: 'India' },
+  { name: 'Karthik Raja', rating: 5, comment: 'Great product selection and super fast customer support. Highly recommended.', location: 'India' },
+];
+
 const Home = () => {
   const { products } = useProducts();
-  const { setIsAiOpen, sendMessage } = useAI();
+  const { user } = useAuth();
 
-  const featuredProducts = (products || []).filter((p) => p?.isFeatured || true).slice(0, 4);
+  const safeProducts = products || [];
+  const dealsProducts = safeProducts.filter((p) => p.originalPrice > p.price).slice(0, 4);
+  const trendingProducts = safeProducts.slice(0, 4);
+  const bestSellers = safeProducts.filter((p) => p.isFeatured || true).slice(2, 6);
 
   return (
     <div className="space-y-12 pb-16">
-      {/* Light & Professional Hero Section */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 p-8 sm:p-14 text-white shadow-xl">
+      {/* 🌟 Personalization Welcome Banner (When Logged In) */}
+      {user && (
+        <section className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 animate-fade-in">
+          <div className="space-y-1">
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
+              Welcome back, <span className="text-indigo-600">{user.name}</span>! 👋
+            </h2>
+            <p className="text-xs text-slate-600">Pick up right where you left off in your shopping journey.</p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap text-xs font-bold">
+            <Link to="/orders" className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 px-3.5 py-2 rounded-xl transition">
+              Orders in Progress
+            </Link>
+            <Link to="/wishlist" className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl transition">
+              View Wishlist
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* 🚀 Clean Product-First Hero Banner */}
+      <section className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-8 sm:p-14 text-white shadow-2xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/90 to-indigo-950/60 z-0" />
         <div className="relative z-10 max-w-2xl space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-indigo-200 text-xs font-bold">
-            <Sparkles className="w-4 h-4 text-amber-300 animate-spin" />
-            <span>Next-Gen Enterprise MERN Storefront</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-bold">
+            <Award className="w-4 h-4 text-amber-400" />
+            <span>NexusMart Official Storefront</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight text-white">
-            Shop Smarter with <span className="bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300 bg-clip-text text-transparent">AI Intelligence</span>
+            Find the Best Products at the <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-amber-300 bg-clip-text text-transparent">Best Prices</span>
           </h1>
 
-          <p className="text-base sm:text-lg text-slate-200 font-normal leading-relaxed">
-            Discover curated electronics, luxury apparel, and wearables. Ask our floating AI shopping assistant to compare products, match your budget, and auto-apply discount coupons!
+          <p className="text-base sm:text-lg text-slate-300 font-normal leading-relaxed">
+            Browse thousands of top-rated electronics, fashion, home essentials, and luxury wearables with guaranteed fast delivery.
           </p>
 
-          {/* Correctly Aligned CTA Buttons */}
+          {/* Clean Primary Hero CTAs */}
           <div className="flex flex-wrap items-center gap-4 pt-2">
-            <Link to="/shop" className="btn-primary text-sm py-3 px-6 inline-flex items-center justify-center">
-              <span>Explore Products</span>
+            <Link to="/shop" className="btn-primary bg-indigo-600 hover:bg-indigo-700 text-white text-sm py-3.5 px-7 rounded-xl font-extrabold inline-flex items-center justify-center shadow-lg shadow-indigo-600/30 transition">
+              <span>Shop Now</span>
               <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
 
-            <button
-              onClick={() => {
-                setIsAiOpen(true);
-                sendMessage("Suggest gaming laptops under ₹70,000", featuredProducts);
-              }}
-              className="btn-secondary text-sm py-3 px-6 inline-flex items-center justify-center bg-white/10 hover:bg-white/20 text-white border-white/20"
-            >
-              <Bot className="w-4 h-4 text-indigo-300 mr-2" />
-              <span>Ask AI for Laptops</span>
-            </button>
+            <Link to="/shop?tag=deals" className="btn-secondary bg-white/10 hover:bg-white/20 text-white border-white/20 text-sm py-3.5 px-7 rounded-xl font-bold inline-flex items-center justify-center transition">
+              <Zap className="w-4 h-4 text-amber-400 mr-2 fill-current" />
+              <span>Explore Deals</span>
+            </Link>
+          </div>
+
+          {/* Trust Signal Badge */}
+          <div className="pt-4 flex items-center gap-3 text-xs text-slate-400 border-t border-slate-800">
+            <div className="flex items-center text-amber-400 font-extrabold gap-1">
+              <Star className="w-4 h-4 fill-current" />
+              <span>4.8/5</span>
+            </div>
+            <span>•</span>
+            <span className="text-slate-300 font-semibold">Trusted by 10,000+ Verified Customers</span>
           </div>
         </div>
       </section>
 
-      {/* Category Quick Grid */}
-      <section className="space-y-6">
+      {/* 📦 Categories Quick Grid */}
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-extrabold text-slate-900">Shop by Category</h2>
-            <p className="text-xs text-slate-500">Explore items tailored to your lifestyle</p>
-          </div>
-          <Link to="/shop" className="text-xs font-bold text-indigo-600 hover:underline">View All →</Link>
+          <h2 className="text-xl font-extrabold text-slate-900">Explore Top Categories</h2>
+          <Link to="/shop" className="text-xs font-bold text-indigo-600 hover:underline">View All</Link>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {categories.map((cat, idx) => {
-            const Icon = cat.icon;
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {categories.map((cat) => {
+            const IconComp = cat.icon;
             return (
               <Link
-                key={idx}
+                key={cat.slug}
                 to={`/shop?category=${cat.slug}`}
-                className="glass-panel p-6 group hover:-translate-y-1 transition duration-300 flex items-center justify-between bg-white border border-slate-200 shadow-sm hover:shadow-md"
+                className="group glass-panel p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-400 hover:shadow-lg transition flex flex-col items-center text-center space-y-3 cursor-pointer"
               >
-                <div className="space-y-1">
-                  <h3 className="font-bold text-slate-900 group-hover:text-indigo-600 transition text-base">{cat.name}</h3>
-                  <p className="text-xs text-slate-500">Browse Catalog</p>
+                <div className={`w-12 h-12 rounded-2xl ${cat.color} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
+                  <IconComp className="w-6 h-6" />
                 </div>
-                <div className={`w-12 h-12 rounded-2xl ${cat.color} flex items-center justify-center shadow-md`}>
-                  <Icon className="w-6 h-6" />
-                </div>
+                <h3 className="font-bold text-sm text-slate-900 group-hover:text-indigo-600 transition">{cat.name}</h3>
               </Link>
             );
           })}
         </div>
       </section>
 
-      {/* 🛡️ Amazon-Style Trust & Customer Assurance Grid */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-panel p-5 bg-white border border-slate-200 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
-            <Truck className="w-6 h-6 text-indigo-600" />
+      {/* ⚡ Today's Deals (Flash Sale) */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl">
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-amber-500 fill-current" />
+            <div>
+              <h2 className="text-base sm:text-lg font-extrabold text-slate-900">Today's Flash Deals</h2>
+              <p className="text-xs text-slate-600">Limited time discounts up to 30% OFF</p>
+            </div>
           </div>
-          <div>
-            <h4 className="font-extrabold text-slate-900 text-sm">FREE & Fast Delivery</h4>
-            <p className="text-xs text-slate-500 mt-0.5">Express shipping on orders above ₹499</p>
-          </div>
+          <Link to="/shop?tag=deals" className="btn-primary bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs py-2 px-4 rounded-xl inline-flex items-center gap-1">
+            <span>View All Deals</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
-
-        <div className="glass-panel p-5 bg-white border border-slate-200 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-6 h-6 text-emerald-600" />
-          </div>
-          <div>
-            <h4 className="font-extrabold text-slate-900 text-sm">7-Day Easy Return</h4>
-            <p className="text-xs text-slate-500 mt-0.5">100% Money-back replacement guarantee</p>
-          </div>
-        </div>
-
-        <div className="glass-panel p-5 bg-white border border-slate-200 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition">
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
-            <Zap className="w-6 h-6 text-amber-600 fill-current" />
-          </div>
-          <div>
-            <h4 className="font-extrabold text-slate-900 text-sm">100% Genuine Products</h4>
-            <p className="text-xs text-slate-500 mt-0.5">Directly sourced official brand stock</p>
-          </div>
-        </div>
-
-        <div className="glass-panel p-5 bg-white border border-slate-200 rounded-2xl flex items-center gap-4 shadow-sm hover:shadow-md transition">
-          <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0">
-            <Bot className="w-6 h-6 text-purple-600" />
-          </div>
-          <div>
-            <h4 className="font-extrabold text-slate-900 text-sm">24/7 AI Shopping Help</h4>
-            <p className="text-xs text-slate-500 mt-0.5">Instant voice & text action support</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Products Catalog */}
-      <section className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-              <span>Trending & Featured Products</span>
-              <Zap className="w-5 h-5 text-amber-500 fill-current" />
-            </h2>
-            <p className="text-xs text-slate-500">Top customer picks with high ratings & fast delivery</p>
-          </div>
-          <Link to="/shop" className="btn-secondary py-2 px-4 text-xs">Browse Shop</Link>
-        </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredProducts.map((product) => (
-            <ProductCard key={product._id || product.id} product={product} />
+          {dealsProducts.map((p) => (
+            <ProductCard key={p._id || p.id} product={p} />
           ))}
         </div>
       </section>
 
-      {/* AI Capabilities Showcase */}
-      <section className="p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-indigo-700 via-purple-700 to-slate-900 text-white shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 border border-indigo-500/30">
-        <div className="space-y-4 max-w-xl">
-          <span className="badge bg-white/20 text-white border border-white/30 px-3 py-1 text-xs">Action-Oriented AI</span>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">Experience AI Voice & Action Shopping</h2>
-          <p className="text-sm text-indigo-100 leading-relaxed">
-            Our floating assistant doesn't just talk — it takes actions for you! Compare specs, add items to cart, track packages, and apply promo codes through voice or text commands.
-          </p>
-          <button onClick={() => setIsAiOpen(true)} className="btn-secondary text-sm py-2.5 px-6 bg-white text-indigo-700 hover:bg-slate-100 border-none font-bold shadow-md">
-            <Bot className="w-4 h-4 text-indigo-600" />
-            <span>Launch AI Assistant</span>
-          </button>
+      {/* 🔥 Trending Products */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-extrabold text-slate-900">Trending Products</h2>
+            <p className="text-xs text-slate-500">Most popular picks bought by customers this week</p>
+          </div>
+          <Link to="/shop" className="text-xs font-bold text-indigo-600 hover:underline">See More</Link>
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {trendingProducts.map((p) => (
+            <ProductCard key={p._id || p.id} product={p} />
+          ))}
+        </div>
+      </section>
 
-        <div className="w-full md:w-80 p-6 bg-slate-900/80 backdrop-blur-xl border border-indigo-400/40 shadow-2xl rounded-2xl text-xs space-y-3 text-white">
-          <div className="flex items-center gap-2 text-amber-300 font-bold text-sm border-b border-white/10 pb-2">
-            <Bot className="w-4 h-4 text-amber-300" />
-            <span>Try these AI Prompts:</span>
+      {/* 🏆 Best Sellers */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-extrabold text-slate-900">Best Sellers</h2>
+            <p className="text-xs text-slate-500">Highest rated products with guaranteed warranty</p>
           </div>
-          <div className="p-3 rounded-xl bg-white/10 hover:bg-indigo-600/40 border border-white/15 text-white font-medium cursor-pointer transition shadow-sm flex items-center justify-between" onClick={() => { setIsAiOpen(true); sendMessage("Compare first two laptops"); }}>
-            <span>"Compare the first two laptops"</span>
-            <span className="text-indigo-300 text-xs">→</span>
-          </div>
-          <div className="p-3 rounded-xl bg-white/10 hover:bg-indigo-600/40 border border-white/15 text-white font-medium cursor-pointer transition shadow-sm flex items-center justify-between" onClick={() => { setIsAiOpen(true); sendMessage("Apply coupon SAVE10"); }}>
-            <span>"Apply coupon SAVE10 to my cart"</span>
-            <span className="text-indigo-300 text-xs">→</span>
-          </div>
-          <div className="p-3 rounded-xl bg-white/10 hover:bg-indigo-600/40 border border-white/15 text-white font-medium cursor-pointer transition shadow-sm flex items-center justify-between" onClick={() => { setIsAiOpen(true); sendMessage("Where is my order?"); }}>
-            <span>"Where is my order #10231?"</span>
-            <span className="text-indigo-300 text-xs">→</span>
-          </div>
+          <Link to="/shop?sort=bestseller" className="text-xs font-bold text-indigo-600 hover:underline">See All Best Sellers</Link>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {bestSellers.map((p) => (
+            <ProductCard key={p._id || p.id} product={p} />
+          ))}
+        </div>
+      </section>
+
+      {/* 🏷️ Featured Brands */}
+      <section className="space-y-4 bg-slate-100 p-6 rounded-3xl">
+        <h2 className="text-base font-extrabold text-slate-900 text-center uppercase tracking-wider">
+          Official Brand Partners
+        </h2>
+        <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12 opacity-75 grayscale hover:grayscale-0 transition-all">
+          {featuredBrands.map((b, i) => (
+            <span key={i} className="font-extrabold text-base sm:text-lg text-slate-700 tracking-wider">
+              {b.name}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      {/* ⭐ Customer Reviews */}
+      <section className="space-y-6">
+        <div className="text-center space-y-1">
+          <h2 className="text-xl font-extrabold text-slate-900">What Our Customers Say</h2>
+          <p className="text-xs text-slate-500">Real feedback from 10,000+ satisfied buyers</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {customerReviews.map((rev, idx) => (
+            <div key={idx} className="glass-panel p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
+              <div className="flex items-center gap-1 text-amber-500">
+                {[...Array(rev.rating)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-current" />
+                ))}
+              </div>
+              <p className="text-xs text-slate-700 leading-relaxed font-medium">"{rev.comment}"</p>
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-900">{rev.name}</span>
+                <span className="text-[10px] text-slate-400">{rev.location}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ✉️ Newsletter Subscription */}
+      <section className="bg-indigo-600 rounded-3xl p-8 sm:p-10 text-white text-center space-y-4 shadow-xl">
+        <div className="max-w-md mx-auto space-y-2">
+          <Mail className="w-8 h-8 text-indigo-200 mx-auto" />
+          <h2 className="text-2xl font-extrabold">Subscribe for Exclusive Deals</h2>
+          <p className="text-xs text-indigo-100">Get 10% off your first order plus secret flash sale alerts.</p>
+        </div>
+        <form onSubmit={(e) => { e.preventDefault(); alert('🎉 Thank you for subscribing to NexusMart!'); }} className="max-w-md mx-auto flex gap-2">
+          <input
+            type="email"
+            required
+            placeholder="Enter your email address"
+            className="flex-1 bg-white text-slate-900 rounded-xl px-4 py-2.5 text-xs font-medium focus:outline-none placeholder-slate-400"
+          />
+          <button type="submit" className="bg-slate-950 hover:bg-slate-900 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition cursor-pointer">
+            Subscribe
+          </button>
+        </form>
+      </section>
+
+      {/* 🛡️ Trust Signals Strip */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-1">
+          <Truck className="w-6 h-6 text-indigo-600 mx-auto" />
+          <h4 className="font-bold text-xs text-slate-900">Fast Express Shipping</h4>
+          <p className="text-[11px] text-slate-500">Free delivery on orders &gt; ₹499</p>
+        </div>
+        <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-1">
+          <ShieldCheck className="w-6 h-6 text-emerald-600 mx-auto" />
+          <h4 className="font-bold text-xs text-slate-900">Secure Checkout</h4>
+          <p className="text-[11px] text-slate-500">256-bit SSL encrypted</p>
+        </div>
+        <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-1">
+          <RefreshCw className="w-6 h-6 text-purple-600 mx-auto" />
+          <h4 className="font-bold text-xs text-slate-900">7 Days Easy Return</h4>
+          <p className="text-[11px] text-slate-500">Hassle-free money back guarantee</p>
+        </div>
+        <div className="p-4 bg-white rounded-2xl border border-slate-200 space-y-1">
+          <CheckCircle2 className="w-6 h-6 text-amber-600 mx-auto" />
+          <h4 className="font-bold text-xs text-slate-900">100% Genuine Products</h4>
+          <p className="text-[11px] text-slate-500">Direct from official brand partners</p>
         </div>
       </section>
     </div>

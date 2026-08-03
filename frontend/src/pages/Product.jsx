@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Star, ShoppingCart, Heart, Bot, MessageSquare, Edit2, Trash2, CheckCircle2, LogIn, Send } from 'lucide-react';
+import { Star, ShoppingCart, Heart, Bot, MessageSquare, Edit2, Trash2, CheckCircle2, LogIn, Send, ShieldCheck, Truck, RefreshCw, Award, Plus, Sparkles } from 'lucide-react';
 import { useProducts } from '../context/ProductContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -13,9 +13,10 @@ const Product = () => {
   const { getProductById, addOrUpdateReview, deleteReview } = useProducts();
   const { user } = useAuth();
   const [quantity, setQuantity] = useState(1);
+  const [selectedImageIdx, setSelectedImageIdx] = useState(0);
 
   const product = getProductById(id);
-  const { addToCart } = useCart();
+  const { addToCart, setIsCartOpen } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { setIsAiOpen, sendMessage } = useAI();
 
@@ -46,7 +47,6 @@ const Product = () => {
     },
   ];
 
-  // Pre-fill form if user has an existing review
   const existingReview = currentUserId
     ? reviewsList.find((r) => r.user && r.user.toString() === currentUserId.toString())
     : null;
@@ -65,12 +65,13 @@ const Product = () => {
     return (
       <div className="glass-panel p-12 text-center text-slate-700 space-y-4 max-w-md mx-auto my-12 bg-white border border-slate-200 shadow-sm">
         <h2 className="text-xl font-bold text-slate-900">Product Not Found</h2>
-        <button onClick={() => navigate('/shop')} className="btn-primary bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold py-2.5 px-6 rounded-xl inline-flex items-center gap-2 shadow-sm cursor-pointer">Back to Shop</button>
+        <button onClick={() => navigate('/shop')} className="btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-xl inline-flex items-center gap-2 shadow-sm cursor-pointer">Back to Shop</button>
       </div>
     );
   }
 
   const isLiked = isInWishlist(product._id || product.id);
+  const productImages = product.images?.length > 0 ? product.images : ['https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'];
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -101,7 +102,6 @@ const Product = () => {
     }
   };
 
-  // Calculate Star Rating Breakdown
   const totalReviewsCount = reviewsList.length;
   const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
   reviewsList.forEach((r) => {
@@ -113,95 +113,186 @@ const Product = () => {
       {/* Product Top Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* Left: Image Gallery */}
-        <div className="glass-panel p-6 rounded-3xl space-y-4 bg-white border border-slate-200 shadow-sm">
-          <div className="aspect-square rounded-2xl overflow-hidden bg-slate-50 border border-slate-100">
+        <div className="space-y-4">
+          <div className="glass-panel p-4 rounded-3xl bg-white border border-slate-200 shadow-sm aspect-square overflow-hidden flex items-center justify-center">
             <img
-              src={product.images?.[0] || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'}
+              src={productImages[selectedImageIdx] || productImages[0]}
               alt={product.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover rounded-2xl hover:scale-105 transition-transform duration-500"
             />
           </div>
+
+          {/* Thumbnail Selectors */}
+          {productImages.length > 1 && (
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {productImages.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedImageIdx(idx)}
+                  className={`w-16 h-16 rounded-xl border-2 overflow-hidden shrink-0 transition cursor-pointer ${
+                    selectedImageIdx === idx ? 'border-indigo-600 ring-2 ring-indigo-200' : 'border-slate-200 opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Right: Details & Buying Controls */}
         <div className="space-y-6">
           <div>
-            <span className="badge bg-indigo-50 text-indigo-700 border border-indigo-200 mb-2">{product.category}</span>
-            <h1 className="text-3xl font-extrabold text-slate-900">{product.name}</h1>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-100">
+                {product.brand || product.category || 'NexusMart'}
+              </span>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> In Stock
+              </span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">{product.name}</h1>
 
             <div className="flex items-center gap-3 mt-3">
-              <div className="flex items-center text-amber-500 text-sm">
-                <Star className="w-4 h-4 fill-current" />
-                <span className="font-bold ml-1 text-slate-900">{product.rating || 4.8}</span>
+              <div className="flex items-center text-amber-500 text-sm font-extrabold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                <Star className="w-4 h-4 fill-current mr-1 text-amber-400" />
+                <span>{product.rating || 4.8}</span>
               </div>
-              <span className="text-xs text-slate-500">({totalReviewsCount} Customer Reviews)</span>
+              <span className="text-xs text-slate-500 font-medium">({totalReviewsCount} Verified Reviews)</span>
               <span className="text-slate-300">•</span>
-              <span className="badge badge-stock">In Stock ({product.stock || 10} units)</span>
+              <span className="text-xs font-bold text-slate-700">Model: #{product._id?.slice(-6) || 'NX-901'}</span>
             </div>
           </div>
 
-          {/* Pricing */}
-          <div className="flex items-baseline gap-3">
-            <span className="text-3xl font-extrabold text-slate-900">₹{product.price.toLocaleString()}</span>
-            {product.originalPrice > product.price && (
-              <span className="text-base text-slate-400 line-through">₹{product.originalPrice.toLocaleString()}</span>
-            )}
+          {/* Pricing Banner */}
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
+            <div className="flex items-baseline gap-3">
+              <span className="text-3xl font-extrabold text-slate-900">₹{product.price?.toLocaleString()}</span>
+              {product.originalPrice > product.price && (
+                <span className="text-base text-slate-400 line-through">₹{product.originalPrice?.toLocaleString()}</span>
+              )}
+              {product.originalPrice > product.price && (
+                <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                  Save {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-500 font-medium">Inclusive of all taxes. Free express shipping applied at checkout.</p>
           </div>
 
-          <p className="text-sm text-slate-600 leading-relaxed">{product.description}</p>
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">{product.description}</p>
 
-          {/* Quantity & CTA Buttons */}
+          {/* Trust Badges */}
+          <div className="grid grid-cols-3 gap-2 text-center text-[11px] pt-2">
+            <div className="p-2.5 bg-white border border-slate-200 rounded-xl space-y-1">
+              <Truck className="w-4 h-4 text-indigo-600 mx-auto" />
+              <div className="font-bold text-slate-900">Fast Delivery</div>
+              <div className="text-[10px] text-slate-500">By Tomorrow</div>
+            </div>
+            <div className="p-2.5 bg-white border border-slate-200 rounded-xl space-y-1">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 mx-auto" />
+              <div className="font-bold text-slate-900">1 Year Warranty</div>
+              <div className="text-[10px] text-slate-500">Brand Covered</div>
+            </div>
+            <div className="p-2.5 bg-white border border-slate-200 rounded-xl space-y-1">
+              <RefreshCw className="w-4 h-4 text-purple-600 mx-auto" />
+              <div className="font-bold text-slate-900">7 Days Return</div>
+              <div className="text-[10px] text-slate-500">Full Refund</div>
+            </div>
+          </div>
+
+          {/* Quantity & Add to Cart Controls */}
           <div className="space-y-4 pt-4 border-t border-slate-200">
             <div className="flex items-center gap-4">
               <label className="text-xs font-bold text-slate-700">Quantity:</label>
-              <div className="flex items-center bg-slate-100 border border-slate-200 rounded-lg">
+              <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="px-3 py-1 text-slate-700 hover:bg-slate-200 rounded-l-lg font-bold"
+                  className="px-3.5 py-1 text-slate-700 hover:bg-slate-200 rounded-l-xl font-bold"
                 >
                   -
                 </button>
-                <span className="px-4 py-1 text-xs font-bold text-slate-900">{quantity}</span>
+                <span className="px-4 py-1 text-xs font-extrabold text-slate-900">{quantity}</span>
                 <button
                   onClick={() => setQuantity((q) => q + 1)}
-                  className="px-3 py-1 text-slate-700 hover:bg-slate-200 rounded-r-lg font-bold"
+                  className="px-3.5 py-1 text-slate-700 hover:bg-slate-200 rounded-r-xl font-bold"
                 >
                   +
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => addToCart(product, quantity)}
-                className="btn-primary bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold py-3 px-8 text-sm flex-1 justify-center rounded-xl inline-flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+                className="btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 text-xs flex-1 justify-center rounded-xl inline-flex items-center gap-2 shadow-sm transition cursor-pointer"
               >
-                <ShoppingCart className="w-4 h-4 text-white shrink-0" />
+                <ShoppingCart className="w-4 h-4 text-white" />
                 <span>Add to Cart</span>
               </button>
 
               <button
+                onClick={() => {
+                  addToCart(product, quantity);
+                  setIsCartOpen(true);
+                  navigate('/checkout');
+                }}
+                className="btn-primary bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-3 px-6 text-xs flex-1 justify-center rounded-xl inline-flex items-center gap-2 shadow-sm transition cursor-pointer"
+              >
+                <span>Buy Now</span>
+              </button>
+
+              <button
                 onClick={() => toggleWishlist(product)}
-                className={`p-3 rounded-full border transition ${
+                className={`p-3 rounded-xl border transition cursor-pointer ${
                   isLiked ? 'bg-pink-600 text-white border-pink-600' : 'bg-white text-slate-700 border-slate-200 hover:text-pink-600 shadow-sm'
                 }`}
+                title="Wishlist"
               >
                 <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
               </button>
             </div>
           </div>
 
-          {/* Ask AI about this product */}
-          <button
-            onClick={() => {
-              setIsAiOpen(true);
-              sendMessage(`What are the key advantages and alternative recommendations for ${product.name}?`, [product]);
-            }}
-            className="w-full glass-panel p-3.5 rounded-xl border-indigo-200 text-indigo-700 bg-indigo-50/50 flex items-center justify-center gap-2 text-xs font-bold hover:bg-indigo-100/50 transition"
-          >
-            <Bot className="w-4 h-4 text-indigo-600" />
-            <span>Ask AI Assistant about this product's features</span>
-          </button>
+          {/* 🤖 Non-Intrusive Ask AI Button Section */}
+          <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-3">
+            <div className="flex items-center gap-2 text-indigo-900 font-extrabold text-xs">
+              <Sparkles className="w-4 h-4 text-indigo-600 animate-pulse" />
+              <span>Need help deciding? Ask AI Assistant:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => {
+                  setIsAiOpen(true);
+                  sendMessage(`Explain the key specifications and features of ${product.name}`, [product]);
+                }}
+                className="px-3 py-1.5 rounded-lg bg-white text-indigo-700 border border-indigo-200 text-xs font-semibold hover:bg-indigo-100 transition cursor-pointer"
+              >
+                Explain Specifications
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsAiOpen(true);
+                  sendMessage(`Find cheaper alternatives to ${product.name} under ₹${product.price}`, [product]);
+                }}
+                className="px-3 py-1.5 rounded-lg bg-white text-indigo-700 border border-indigo-200 text-xs font-semibold hover:bg-indigo-100 transition cursor-pointer"
+              >
+                Find Cheaper Alternatives
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsAiOpen(true);
+                  sendMessage(`Recommend top matching accessories for ${product.name}`, [product]);
+                }}
+                className="px-3 py-1.5 rounded-lg bg-white text-indigo-700 border border-indigo-200 text-xs font-semibold hover:bg-indigo-100 transition cursor-pointer"
+              >
+                Recommend Accessories
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -277,7 +368,6 @@ const Product = () => {
 
             {user ? (
               <form onSubmit={handleReviewSubmit} className="space-y-4 text-xs">
-                {/* Interactive Star Rating Selector */}
                 <div>
                   <label className="block text-slate-700 font-bold mb-1.5">Select Your Rating:</label>
                   <div className="flex items-center gap-1">
@@ -305,7 +395,6 @@ const Product = () => {
                   </div>
                 </div>
 
-                {/* Comment Text Area */}
                 <div>
                   <label className="block text-slate-700 font-bold mb-1.5">Your Review Comment:</label>
                   <textarea
@@ -322,7 +411,7 @@ const Product = () => {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="btn-primary bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold py-2.5 px-6 text-xs rounded-xl inline-flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+                    className="btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 text-xs rounded-xl inline-flex items-center gap-2 shadow-sm transition cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5 text-white shrink-0" />
                     <span>{submitting ? 'Posting...' : existingReview ? 'Update Review' : 'Submit Review'}</span>
@@ -332,7 +421,7 @@ const Product = () => {
                     <button
                       type="button"
                       onClick={() => handleDeleteReview(existingReview._id)}
-                      className="btn-secondary bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold py-2.5 px-4 text-xs rounded-xl inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                      className="btn-secondary bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold py-2.5 px-4 text-xs rounded-xl inline-flex items-center gap-1.5 shadow-sm transition cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5 text-red-600 shrink-0" />
                       <span>Delete My Review</span>
