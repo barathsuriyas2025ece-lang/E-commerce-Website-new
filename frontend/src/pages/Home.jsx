@@ -87,15 +87,7 @@ const Home = () => {
             </Link>
           </div>
 
-          {/* Trust Signal Badge */}
-          <div className="pt-4 flex items-center gap-3 text-xs text-slate-400 border-t border-slate-800">
-            <div className="flex items-center text-amber-400 font-extrabold gap-1">
-              <Star className="w-4 h-4 fill-current" />
-              <span>4.8/5</span>
-            </div>
-            <span>•</span>
-            <span className="text-slate-300 font-semibold">Trusted by 10,000+ Verified Customers</span>
-          </div>
+
         </div>
       </section>
 
