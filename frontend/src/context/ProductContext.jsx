@@ -27,7 +27,7 @@ export const ProductProvider = ({ children }) => {
       originalPrice: 79990,
       category: 'Electronics & Laptops',
       brand: 'ASUS',
-      stock: 8,
+      stock: 4, // Low stock sample
       images: ['https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=800'],
       isFeatured: true,
       rating: 4.7,
@@ -88,6 +88,29 @@ export const ProductProvider = ({ children }) => {
     if (!id) return null;
     const lookupKey = typeof id === 'string' ? id : id.toString();
     return productMap.get(lookupKey) || products.find((product) => product._id.toString() === lookupKey) || null;
+  };
+
+  const deductStock = (orderItems = []) => {
+    setProducts((prevProducts) =>
+      prevProducts.map((prod) => {
+        const prodId = (prod._id || prod.id || '').toString();
+        const match = orderItems.find((item) => {
+          const itemId = (item.product || item._id || item.id || '').toString();
+          return itemId === prodId;
+        });
+
+        if (match) {
+          const currentStock = prod.stock !== undefined ? prod.stock : (prod.countInStock || 10);
+          const newStock = Math.max(0, currentStock - match.quantity);
+          return {
+            ...prod,
+            stock: newStock,
+            countInStock: newStock,
+          };
+        }
+        return prod;
+      })
+    );
   };
 
   const addOrUpdateReview = async (productId, { rating, comment, user }) => {
@@ -166,7 +189,7 @@ export const ProductProvider = ({ children }) => {
   };
 
   return (
-    <ProductContext.Provider value={{ products, loading, getProductById, addOrUpdateReview, deleteReview }}>
+    <ProductContext.Provider value={{ products, loading, getProductById, deductStock, addOrUpdateReview, deleteReview }}>
       {children}
     </ProductContext.Provider>
   );

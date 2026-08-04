@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, CreditCard, Smartphone, Banknote, CheckCircle2, Lock, Truck, ArrowRight, Sparkles } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useProducts } from '../context/ProductContext';
 import { orderAPI } from '../services/api';
 
 const Checkout = () => {
   const { cartItems, subtotal, tax, discountAmount, total, clearCart } = useCart();
   const { user } = useAuth();
+  const { deductStock } = useProducts();
   const navigate = useNavigate();
 
   // Active step state: 1 = Shipping, 2 = Payment, 3 = Review
@@ -106,11 +108,13 @@ const Checkout = () => {
 
       const res = await orderAPI.createOrder(orderPayload);
       if (res.data.success) {
+        if (deductStock) deductStock(cartItems);
         clearCart();
         navigate('/orders');
       }
     } catch (err) {
       console.error('Error placing order:', err);
+      if (deductStock) deductStock(cartItems);
       clearCart();
       navigate('/orders');
     } finally {

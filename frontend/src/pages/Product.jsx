@@ -102,6 +102,12 @@ const Product = () => {
     if (ratingCounts[r.rating] !== undefined) ratingCounts[r.rating]++;
   });
 
+  const stockCount = product.stock !== undefined
+    ? product.stock
+    : (product.countInStock !== undefined ? product.countInStock : 10);
+  const isOutOfStock = stockCount <= 0;
+  const isLowStock = stockCount > 0 && stockCount <= 5;
+
   return (
     <div className="space-y-12 pb-16">
       {/* Product Top Grid */}
@@ -112,7 +118,9 @@ const Product = () => {
             <img
               src={productImages[selectedImageIdx] || productImages[0]}
               alt={product.name}
-              className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500 cursor-pointer"
+              className={`w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500 cursor-pointer ${
+                isOutOfStock ? 'grayscale opacity-75' : ''
+              }`}
               onClick={() => setIsLightboxOpen(true)}
             />
             {/* Zoom Lightbox Trigger Button */}
@@ -159,9 +167,19 @@ const Product = () => {
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-100">
                 {product.brand || product.category || 'NexusMart'}
               </span>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> In Stock
-              </span>
+              {isOutOfStock ? (
+                <span className="text-[10px] font-black text-white bg-slate-900 px-2.5 py-0.5 rounded-md shadow-sm">
+                  🔴 Out of Stock
+                </span>
+              ) : isLowStock ? (
+                <span className="text-[10px] font-black text-amber-950 bg-amber-400 px-2.5 py-0.5 rounded-md border border-amber-500 shadow-sm animate-pulse">
+                  ⚠️ Few in Stock: Only {stockCount} Left!
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" /> In Stock ({stockCount} available)
+                </span>
+              )}
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">{product.name}</h1>
@@ -221,38 +239,54 @@ const Product = () => {
               <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="px-3.5 py-1 text-slate-700 hover:bg-slate-200 rounded-l-xl font-bold"
+                  disabled={isOutOfStock}
+                  className="px-3.5 py-1 text-slate-700 hover:bg-slate-200 rounded-l-xl font-bold disabled:opacity-50"
                 >
                   -
                 </button>
-                <span className="px-4 py-1 text-xs font-extrabold text-slate-900">{quantity}</span>
+                <span className="px-4 py-1 text-xs font-extrabold text-slate-900">{isOutOfStock ? 0 : quantity}</span>
                 <button
-                  onClick={() => setQuantity((q) => q + 1)}
-                  className="px-3.5 py-1 text-slate-700 hover:bg-slate-200 rounded-r-xl font-bold"
+                  onClick={() => setQuantity((q) => Math.min(stockCount, q + 1))}
+                  disabled={isOutOfStock || quantity >= stockCount}
+                  className="px-3.5 py-1 text-slate-700 hover:bg-slate-200 rounded-r-xl font-bold disabled:opacity-50"
                 >
                   +
                 </button>
               </div>
+              {stockCount > 0 && quantity >= stockCount && (
+                <span className="text-[11px] font-bold text-amber-700">Max stock limit reached ({stockCount})</span>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-3">
               <button
-                onClick={() => addToCart(product, quantity)}
-                className="btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 text-xs flex-1 justify-center rounded-xl inline-flex items-center gap-2 shadow-sm transition cursor-pointer"
+                onClick={() => !isOutOfStock && addToCart(product, quantity)}
+                disabled={isOutOfStock}
+                className={`py-3 px-6 text-xs flex-1 justify-center rounded-xl inline-flex items-center gap-2 shadow-sm transition cursor-pointer font-bold ${
+                  isOutOfStock
+                    ? 'bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed'
+                    : 'btn-primary bg-indigo-600 hover:bg-indigo-700 text-white'
+                }`}
               >
-                <ShoppingCart className="w-4 h-4 text-white" />
-                <span>Add to Cart</span>
+                <ShoppingCart className="w-4 h-4" />
+                <span>{isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</span>
               </button>
 
               <button
                 onClick={() => {
+                  if (isOutOfStock) return;
                   addToCart(product, quantity);
                   setIsCartOpen(true);
                   navigate('/checkout');
                 }}
-                className="btn-primary bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold py-3 px-6 text-xs flex-1 justify-center rounded-xl inline-flex items-center gap-2 shadow-sm transition cursor-pointer"
+                disabled={isOutOfStock}
+                className={`py-3 px-6 text-xs flex-1 justify-center rounded-xl inline-flex items-center gap-2 shadow-sm transition cursor-pointer font-extrabold ${
+                  isOutOfStock
+                    ? 'bg-slate-100 text-slate-300 border border-slate-200 cursor-not-allowed'
+                    : 'btn-primary bg-amber-500 hover:bg-amber-600 text-slate-950'
+                }`}
               >
-                <span>Buy Now</span>
+                <span>{isOutOfStock ? 'Unavailable' : 'Buy Now'}</span>
               </button>
 
               <button

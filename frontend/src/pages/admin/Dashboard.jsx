@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { DollarSign, ShoppingBag, Package, Users, AlertTriangle, TrendingUp, Shield, Plus } from 'lucide-react';
+import { DollarSign, ShoppingBag, Package, Users, AlertTriangle, TrendingUp, Shield, Plus, ArrowRight, RefreshCw } from 'lucide-react';
 import { adminAPI } from '../../services/api';
+import { useProducts } from '../../context/ProductContext';
 
 const Dashboard = () => {
+  const { products } = useProducts();
   const [stats, setStats] = useState({
     totalRevenue: 284950,
     totalOrders: 42,
@@ -32,6 +34,10 @@ const Dashboard = () => {
     };
     fetchStats();
   }, []);
+
+  const lowStockProducts = (products || []).filter(
+    (p) => (p.stock !== undefined ? p.stock : (p.countInStock || 10)) <= 5
+  );
 
   return (
     <div className="space-y-8 pb-16">
@@ -95,9 +101,9 @@ const Dashboard = () => {
         <div className="glass-panel p-6 rounded-2xl flex items-center justify-between bg-white border border-slate-200 shadow-sm">
           <div>
             <p className="text-xs text-slate-500 font-bold uppercase">Catalog Products</p>
-            <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{stats.totalProducts}</h3>
+            <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{products?.length || stats.totalProducts}</h3>
             <span className="text-[11px] text-amber-700 font-bold flex items-center gap-1 mt-1">
-              <AlertTriangle className="w-3 h-3 text-amber-600" /> {stats.lowStockAlerts} low stock alerts
+              <AlertTriangle className="w-3 h-3 text-amber-600" /> {lowStockProducts.length} low stock alerts
             </span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200">
@@ -116,6 +122,49 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* ⚠️ Low Stock Inventory Alert Widget */}
+      {lowStockProducts.length > 0 && (
+        <div className="glass-panel p-6 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-extrabold text-amber-950">Inventory Restock Needed ({lowStockProducts.length} Low / Out of Stock Items)</h2>
+                <p className="text-xs text-amber-800">These items have 5 or fewer units remaining in store catalog</p>
+              </div>
+            </div>
+            <Link to="/admin/products" className="btn-primary bg-amber-600 hover:bg-amber-700 text-white text-xs py-2 px-3 rounded-xl flex items-center gap-1">
+              <span>Restock Inventory</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {lowStockProducts.map((prod) => {
+              const currentStock = prod.stock !== undefined ? prod.stock : (prod.countInStock || 0);
+              return (
+                <div key={prod._id} className="p-3 bg-white rounded-xl border border-amber-200 flex items-center justify-between shadow-sm text-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <img src={prod.images?.[0]} alt="" className="w-10 h-10 object-cover rounded-lg bg-slate-100 shrink-0" />
+                    <div className="truncate">
+                      <h4 className="font-bold text-slate-900 truncate">{prod.name}</h4>
+                      <span className="text-[10px] text-slate-400 font-semibold">{prod.category}</span>
+                    </div>
+                  </div>
+                  <span className={`px-2 py-1 rounded-md font-black text-[11px] shrink-0 ${
+                    currentStock <= 0 ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-amber-100 text-amber-800 border border-amber-300'
+                  }`}>
+                    {currentStock <= 0 ? '🔴 0 (Out)' : `⚠️ ${currentStock} left`}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Visual Revenue Bar Graph */}
       <div className="glass-panel p-6 rounded-2xl space-y-4 bg-white border border-slate-200 shadow-sm">
@@ -143,3 +192,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

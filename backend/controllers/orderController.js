@@ -1,4 +1,6 @@
 const Order = require('../models/Order');
+const Product = require('../models/Product');
+const Notification = require('../models/Notification');
 
 let memoryOrders = [
   {
@@ -28,6 +30,37 @@ const createOrder = async (req, res) => {
 
     if (!orderItems || orderItems.length === 0) {
       return res.status(400).json({ success: false, message: 'No order items provided' });
+    }
+
+    // Deduct inventory stock for each purchased item & notify admin if low stock
+    for (const item of orderItems) {
+      if (item.product) {
+        try {
+          const updatedProd = await Product.findByIdAndUpdate(
+            item.product,
+            { $inc: { stock: -item.quantity } },
+            { new: true }
+          );
+
+          if (updatedProd) {
+            if (updatedProd.stock <= 0) {
+              await Notification.create({
+                title: '🔴 Out of Stock Warning',
+                message: `Product "${updatedProd.name}" is now OUT OF STOCK! (0 items left)`,
+                type: 'stock',
+              });
+            } else if (updatedProd.stock <= 5) {
+              await Notification.create({
+                title: '⚠️ Low Stock Alert',
+                message: `Product "${updatedProd.name}" is low in stock! Only ${updatedProd.stock} items remaining.`,
+                type: 'stock',
+              });
+            }
+          }
+        } catch (e) {
+          console.error('Error updating stock for product:', item.product, e);
+        }
+      }
     }
 
     const newOrder = {

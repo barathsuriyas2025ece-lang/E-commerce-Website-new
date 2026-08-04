@@ -303,8 +303,18 @@ const AdminProducts = () => {
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`badge ${p.stock < 5 ? 'bg-red-50 text-red-700 border border-red-200' : 'badge-stock'}`}>
-                        {p.stock} units
+                      <span className={`badge ${
+                        (p.stock !== undefined ? p.stock : 10) <= 0
+                          ? 'bg-red-600 text-white font-black border border-red-700'
+                          : (p.stock !== undefined ? p.stock : 10) <= 5
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300 font-extrabold'
+                          : 'badge-stock'
+                      }`}>
+                        {(p.stock !== undefined ? p.stock : 10) <= 0
+                          ? '🔴 0 (Out of Stock)'
+                          : (p.stock !== undefined ? p.stock : 10) <= 5
+                          ? `⚠️ ${p.stock} units (Low)`
+                          : `${p.stock} units`}
                       </span>
                     </td>
                     <td className="p-4 text-right">

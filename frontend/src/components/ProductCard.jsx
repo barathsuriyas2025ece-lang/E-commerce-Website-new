@@ -19,6 +19,12 @@ const ProductCard = ({ product }) => {
   const productId = product._id || product.id || '';
   const isLiked = isInWishlist(productId);
 
+  const stock = product.stock !== undefined
+    ? product.stock
+    : (product.countInStock !== undefined ? product.countInStock : 10);
+  const isOutOfStock = stock <= 0;
+  const isLowStock = stock > 0 && stock <= 5;
+
   const discount =
     product.originalPrice && product.originalPrice > product.price
       ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -27,9 +33,12 @@ const ProductCard = ({ product }) => {
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart(product);
-    setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 1800);
+    if (isOutOfStock) return;
+    const added = addToCart(product);
+    if (added !== false) {
+      setIsAdded(true);
+      setTimeout(() => setIsAdded(false), 1800);
+    }
   };
 
   const brandName = product.brand || product.category || 'NexusMart';
@@ -45,17 +54,27 @@ const ProductCard = ({ product }) => {
               alt={product.name}
               loading="lazy"
               decoding="async"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
+              className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer ${
+                isOutOfStock ? 'grayscale opacity-75' : ''
+              }`}
             />
           </Link>
 
           {/* Floating Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-1 z-10 pointer-events-none">
-            {discount && (
+            {isOutOfStock ? (
+              <span className="badge bg-slate-900 text-white font-extrabold text-[10px] px-2 py-0.5 rounded-md shadow-sm">
+                OUT OF STOCK
+              </span>
+            ) : isLowStock ? (
+              <span className="badge bg-amber-500 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-md shadow-sm animate-pulse">
+                ONLY {stock} LEFT!
+              </span>
+            ) : discount ? (
               <span className="badge bg-red-600 text-white font-extrabold text-[10px] px-2 py-0.5 rounded-md shadow-sm">
                 -{discount}% OFF
               </span>
-            )}
+            ) : null}
           </div>
 
           {/* Quick View Hover Button Bar */}
@@ -131,9 +150,19 @@ const ProductCard = ({ product }) => {
 
             {/* Delivery & Stock */}
             <div className="flex flex-wrap items-center justify-between text-[11px] pt-1 gap-1">
-              <span className="text-emerald-700 font-bold flex items-center gap-0.5">
-                <Check className="w-3 h-3 text-emerald-600" /> In Stock
-              </span>
+              {isOutOfStock ? (
+                <span className="text-red-600 font-extrabold flex items-center gap-0.5">
+                  🔴 Out of Stock
+                </span>
+              ) : isLowStock ? (
+                <span className="text-amber-700 font-extrabold flex items-center gap-0.5">
+                  ⚠️ Few in Stock ({stock} left)
+                </span>
+              ) : (
+                <span className="text-emerald-700 font-bold flex items-center gap-0.5">
+                  <Check className="w-3 h-3 text-emerald-600" /> In Stock
+                </span>
+              )}
               <span className="text-slate-500 font-medium flex items-center gap-1">
                 <Truck className="w-3 h-3 text-indigo-600" /> FREE Delivery
               </span>
@@ -155,13 +184,18 @@ const ProductCard = ({ product }) => {
 
             <button
               onClick={handleAddToCart}
+              disabled={isOutOfStock}
               className={`w-full py-2 px-3 text-xs font-bold rounded-xl inline-flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer ${
-                isAdded
+                isOutOfStock
+                  ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                  : isAdded
                   ? 'bg-emerald-600 text-white'
                   : 'btn-primary bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white'
               }`}
             >
-              {isAdded ? (
+              {isOutOfStock ? (
+                <span>Out of Stock</span>
+              ) : isAdded ? (
                 <>
                   <Check className="w-4 h-4 text-white animate-bounce" />
                   <span>Added ✓</span>
