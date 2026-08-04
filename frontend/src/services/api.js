@@ -335,38 +335,100 @@ export const aiAPI = {
       return await api.post('/ai/query', payload);
     } catch (err) {
       const msg = (payload.message || '').toLowerCase().trim();
-      let text = "I'm your AI Shopping Assistant! I can help you find products, compare specs, track orders, and apply promo codes.";
-      let action = null;
+      const products = payload.products || fallbackSampleProducts || [];
+      const words = msg.split(/\s+/).filter((w) => w.length > 2);
 
-      if (msg === 'hi' || msg === 'hello' || msg === 'hey') {
-        text = "Hello! 👋 I'm your NexusMart AI Shopping Assistant. How can I help you today?";
-        action = { type: 'GREETING', payload: {} };
-      } else if (msg.includes('laptop') || msg.includes('phone') || msg.includes('under') || msg.includes('headphone') || msg.includes('show') || msg.includes('find')) {
-        text = "Here are matching top-rated products from our catalog under your specified budget:";
-        action = { type: 'SEARCH_PRODUCTS', payload: {} };
-      } else if (msg.includes('compare') || msg.includes('vs')) {
-        text = "I've opened the interactive side-by-side product comparison matrix for you:";
-        action = { type: 'COMPARE_PRODUCTS', payload: {} };
-      } else if (msg.includes('order') || msg.includes('track') || msg.includes('package')) {
-        text = "📦 **Order Status for Order #10231**:\n\n- **Status**: Shipped\n- **Courier**: Express Logistics\n- **Tracking ID**: TRK-98471203\n- **Estimated Arrival**: Tomorrow by 5 PM";
-        action = { type: 'TRACK_ORDER', payload: {} };
-      } else if (msg.includes('coupon') || msg.includes('save') || msg.includes('discount')) {
-        text = "🎉 Applied promo code **SAVE10**! Saved 10% on your cart.";
-        action = { type: 'APPLY_COUPON', payload: { code: 'SAVE10', discountPercentage: 10 } };
-      } else if (msg.includes('payment') || msg.includes('upi') || msg.includes('cod') || msg.includes('pay')) {
-        text = "💳 **Supported Payment Options**:\n- UPI (Google Pay, PhonePe, Paytm)\n- Credit / Debit Cards (Visa, Mastercard, RuPay)\n- Net Banking\n- Cash on Delivery (COD)";
-        action = { type: 'FAQ_RESPONSE', payload: {} };
-      } else if (msg.includes('return') || msg.includes('refund') || msg.includes('warranty')) {
-        text = "🛡️ **NexusMart Customer Policy**:\n- 30-Day Doorstep Returns & Full Refund\n- 1-Year Official Brand Warranty\n- Free Delivery over ₹999";
-        action = { type: 'FAQ_RESPONSE', payload: {} };
+      // Score catalog products
+      let scored = products.map((p) => {
+        let score = 0;
+        const pName = (p.name || '').toLowerCase();
+        const pBrand = (p.brand || '').toLowerCase();
+        const pCat = (p.category || '').toLowerCase();
+        const pDesc = (p.description || '').toLowerCase();
+
+        if (msg.includes(pName)) score += 120;
+        if (msg.includes(pBrand) && pBrand.length > 2) score += 40;
+        if (msg.includes(pCat) && pCat.length > 2) score += 30;
+
+        words.forEach((w) => {
+          if (pName.includes(w)) score += 15;
+          if (pBrand.includes(w)) score += 10;
+          if (pCat.includes(w)) score += 10;
+          if (pDesc.includes(w)) score += 5;
+        });
+
+        return { product: p, score };
+      }).filter((i) => i.score > 0);
+
+      scored.sort((a, b) => b.score - a.score);
+
+      const isDetailOrSpecReq =
+        msg.includes('explain') ||
+        msg.includes('feature') ||
+        msg.includes('spec') ||
+        msg.includes('detail') ||
+        msg.includes('about') ||
+        msg.includes('overview') ||
+        msg.includes('price') ||
+        msg.includes('stock');
+
+      if (scored.length > 0 && (isDetailOrSpecReq || scored[0].score >= 100)) {
+        const top = scored[0].product;
+        const stockCount = top.stock !== undefined ? top.stock : (top.countInStock || 10);
+        const origPrice = top.originalPrice || top.price;
+        const discount = origPrice > top.price ? Math.round(((origPrice - top.price) / origPrice) * 100) : 0;
+
+        return {
+          data: {
+            success: true,
+            text: `🔍 **Key Specifications & Features of ${top.name}**:\n\n• **Brand & Model**: ${top.brand || 'NexusMart'} (${top.category})\n• **Selling Price**: ₹${top.price?.toLocaleString()}${discount > 0 ? ` (-${discount}% OFF)` : ''}\n• **Original MRP**: ₹${origPrice?.toLocaleString()}\n• **Customer Rating**: ⭐ ${top.rating || 4.8} / 5.0 (${top.numReviews || 124} reviews)\n• **Stock Status**: ${stockCount <= 0 ? '🔴 Out of Stock' : `✅ In Stock (${stockCount} available)`}\n\n📝 **Technical Highlights & Description**:\n${top.description || 'High-performance premium product engineered for speed, durability, and top-tier reliability.'}`,
+            action: { type: 'PRODUCT_INFO', payload: { product: top } },
+            products: [top],
+          },
+        };
       }
 
+      if (msg.includes('compare') || msg.includes('vs')) {
+        const compareItems = scored.length >= 2 ? [scored[0].product, scored[1].product] : products.slice(0, 2);
+        return {
+          data: {
+            success: true,
+            text: `I've opened the side-by-side product comparison view for evaluating specs and prices:`,
+            action: { type: 'COMPARE_PRODUCTS', payload: { items: compareItems } },
+            products: compareItems,
+          },
+        };
+      }
+
+      if (msg.includes('order') || msg.includes('track')) {
+        return {
+          data: {
+            success: true,
+            text: `📦 **Order Status Update**:\n\n- **Status**: Shipped\n- **Courier**: Express Logistics\n- **Tracking ID**: TRK-98471203\n- **Estimated Arrival**: Tomorrow by 5 PM`,
+            action: { type: 'TRACK_ORDER', payload: {} },
+            products: [],
+          },
+        };
+      }
+
+      if (msg.includes('coupon') || msg.includes('save') || msg.includes('discount')) {
+        return {
+          data: {
+            success: true,
+            text: `🎉 **Active Promo Coupon**: Code **SAVE10** applied! Saved 10% on your cart.`,
+            action: { type: 'APPLY_COUPON', payload: { code: 'SAVE10', discountPercentage: 10 } },
+            products: [],
+          },
+        };
+      }
+
+      const matchedList = scored.length > 0 ? scored.slice(0, 5).map((i) => i.product) : products.slice(0, 5);
       return {
         data: {
           success: true,
-          text,
-          action,
-          products: payload.products || [],
+          text: `Here are the top matching products from our catalog for your query:`,
+          action: { type: 'SEARCH_PRODUCTS', payload: { matchedProducts: matchedList } },
+          products: matchedList,
         },
       };
     }
