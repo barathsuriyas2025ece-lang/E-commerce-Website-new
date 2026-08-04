@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Heart, User, Search, Sparkles, Shield, Package, MapPin, Flame, Award, Truck, X, ArrowRight, TrendingUp } from 'lucide-react';
+import { ShoppingBag, Heart, User, Search, Sparkles, Shield, Package, MapPin, Flame, Award, Truck, X, ArrowRight, TrendingUp, Crown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAI } from '../context/AIContext';
 import { useProducts } from '../context/ProductContext';
 import NotificationBell from '../notifications/NotificationBell';
+import SubscriptionModal from './SubscriptionModal';
 
 const trendingSearches = ['MacBook M3', 'Sony Headphones', 'Wireless Earbuds', 'Gaming Laptop', 'Running Shoes'];
 
@@ -19,6 +20,7 @@ const Navbar = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isSubModalOpen, setIsSubModalOpen] = useState(false);
   const searchRef = useRef(null);
   const navigate = useNavigate();
 
@@ -226,8 +228,13 @@ const Navbar = () => {
             {user ? (
               <div className="flex items-center gap-2">
                 <Link to="/profile" className="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 transition">
-                  <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">
+                  <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shadow-sm relative">
                     {user.name ? user.name[0].toUpperCase() : 'U'}
+                    {user.isVipSubscriber && (
+                      <span className="absolute -bottom-1 -right-1 bg-amber-500 text-slate-950 p-0.5 rounded-full" title="VIP Prime Member">
+                        <Crown className="w-2.5 h-2.5 fill-current" />
+                      </span>
+                    )}
                   </div>
                   <span className="text-xs font-medium text-slate-700 hidden lg:inline">{user.name}</span>
                 </Link>
@@ -260,6 +267,14 @@ const Navbar = () => {
 
             <div className="h-3 w-px bg-slate-700 hidden sm:block" />
 
+            <button
+              onClick={() => setIsSubModalOpen(true)}
+              className="flex items-center gap-1 font-extrabold text-amber-300 hover:text-amber-200 transition cursor-pointer bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/30"
+            >
+              <Crown className="w-3.5 h-3.5 fill-current text-amber-400" />
+              <span>VIP Subscription (₹199/mo)</span>
+            </button>
+
             <Link to="/shop?tag=deals" className="flex items-center gap-1 font-bold text-amber-400 hover:text-amber-300 transition">
               <Flame className="w-3.5 h-3.5 fill-current" />
               <span>Today's Deals</span>
@@ -276,9 +291,6 @@ const Navbar = () => {
             <Link to="/shop?category=apparel" className="hidden lg:inline hover:text-white transition">
               Fashion & Apparel
             </Link>
-            <Link to="/orders" className="hidden sm:inline hover:text-white transition">
-              Orders & Tracking
-            </Link>
           </div>
 
           {/* Right Free Shipping Banner */}
@@ -288,8 +300,12 @@ const Navbar = () => {
           </div>
         </div>
       </div>
+
+      {/* Paid Subscription Modal */}
+      <SubscriptionModal isOpen={isSubModalOpen} onClose={() => setIsSubModalOpen(false)} />
     </header>
   );
 };
 
 export default Navbar;
+

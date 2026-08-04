@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Laptop, Headphones, Shirt, Home as HomeIcon, Zap, Star, ShieldCheck, Truck, RefreshCw, Award, CheckCircle2, Clock, Mail } from 'lucide-react';
+import { ArrowRight, Laptop, Headphones, Shirt, Home as HomeIcon, Zap, Star, ShieldCheck, Truck, RefreshCw, Award, CheckCircle2, Clock, Mail, Crown } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import SubscriptionModal from '../components/SubscriptionModal';
 import { useProducts } from '../context/ProductContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -29,6 +30,7 @@ const customerReviews = [
 const Home = () => {
   const { products } = useProducts();
   const { user } = useAuth();
+  const [isSubModalOpen, setIsSubModalOpen] = useState(false);
 
   const safeProducts = products || [];
   const dealsProducts = safeProducts.filter((p) => p.originalPrice > p.price).slice(0, 4);
@@ -43,6 +45,11 @@ const Home = () => {
           <div className="space-y-1">
             <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
               Welcome back, <span className="text-indigo-600">{user.name}</span>! 👋
+              {user.isVipSubscriber && (
+                <span className="ml-2 inline-flex items-center gap-1 bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                  <Crown className="w-3 h-3 fill-current" /> VIP Member
+                </span>
+              )}
             </h2>
             <p className="text-xs text-slate-600">Pick up right where you left off in your shopping journey.</p>
           </div>
@@ -86,8 +93,6 @@ const Home = () => {
               <span>Explore Deals</span>
             </Link>
           </div>
-
-
         </div>
       </section>
 
@@ -184,26 +189,38 @@ const Home = () => {
         </div>
       </section>
 
-
-
-      {/* ✉️ Newsletter Subscription */}
-      <section className="bg-indigo-600 rounded-3xl p-8 sm:p-10 text-white text-center space-y-4 shadow-xl">
-        <div className="max-w-md mx-auto space-y-2">
-          <Mail className="w-8 h-8 text-indigo-200 mx-auto" />
-          <h2 className="text-2xl font-extrabold">Subscribe for Exclusive Deals</h2>
-          <p className="text-xs text-indigo-100">Get 10% off your first order plus secret flash sale alerts.</p>
+      {/* 👑 VIP Paid Subscription & Membership Showcase */}
+      <section className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-8 sm:p-10 text-white space-y-6 shadow-2xl border border-indigo-900/50 relative overflow-hidden">
+        <div className="max-w-xl space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black uppercase tracking-wider">
+            <Crown className="w-4 h-4 fill-current text-amber-400" />
+            <span>NexusMart VIP Prime Pass</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            Subscribe & Get <span className="text-amber-400 font-black">Unlimited Free Delivery</span> + Extra Discounts
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-300">
+            Join NexusMart VIP Membership from just <strong className="text-white font-bold">₹199/month</strong> or <strong className="text-amber-300 font-bold">₹999/year (Save 58%)</strong>. Instant VIP activation upon payment!
+          </p>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); alert('🎉 Thank you for subscribing to NexusMart!'); }} className="max-w-md mx-auto flex gap-2">
-          <input
-            type="email"
-            required
-            placeholder="Enter your email address"
-            className="flex-1 bg-white text-slate-900 rounded-xl px-4 py-2.5 text-xs font-medium focus:outline-none placeholder-slate-400"
-          />
-          <button type="submit" className="bg-slate-950 hover:bg-slate-900 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition cursor-pointer">
-            Subscribe
+
+        <div className="flex flex-wrap items-center gap-4 pt-2">
+          <button
+            onClick={() => setIsSubModalOpen(true)}
+            className="btn-primary bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs py-3.5 px-7 rounded-xl inline-flex items-center gap-2 shadow-lg shadow-amber-500/25 transition cursor-pointer"
+          >
+            <Crown className="w-4 h-4 fill-current" />
+            <span>Subscribe Now (Starts at ₹199)</span>
           </button>
-        </form>
+          
+          <button
+            onClick={() => setIsSubModalOpen(true)}
+            className="btn-secondary bg-white/10 hover:bg-white/20 text-white border-white/20 font-bold text-xs py-3.5 px-6 rounded-xl inline-flex items-center gap-1.5 transition cursor-pointer"
+          >
+            <span>View VIP Plans & Pricing</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
       </section>
 
       {/* 🛡️ Trust Signals Strip */}
@@ -229,8 +246,12 @@ const Home = () => {
           <p className="text-[11px] text-slate-500">Direct from official brand partners</p>
         </div>
       </section>
+
+      {/* Paid Subscription Modal */}
+      <SubscriptionModal isOpen={isSubModalOpen} onClose={() => setIsSubModalOpen(false)} />
     </div>
   );
 };
 
 export default Home;
+

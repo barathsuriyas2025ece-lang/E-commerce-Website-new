@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Award, Mail, Phone, MapPin, Edit3, Save, CheckCircle2, User } from 'lucide-react';
+import { Award, Mail, Phone, MapPin, Edit3, Save, CheckCircle2, User, Crown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import SubscriptionModal from '../components/SubscriptionModal';
 
 const Profile = () => {
   const { user, setUser } = useAuth();
+  const [isSubModalOpen, setIsSubModalOpen] = useState(false);
 
   const currentUser = user || {
     name: 'Customer User',
@@ -49,22 +51,46 @@ const Profile = () => {
       {/* Profile Header (No Image Avatar - Pure Initial Badge) */}
       <div className="glass-panel p-8 rounded-3xl text-center relative overflow-hidden space-y-4 bg-white border border-slate-200 shadow-sm">
         {/* Initial Badge replacing image */}
-        <div className="w-20 h-20 rounded-full bg-indigo-600 text-white font-extrabold text-3xl flex items-center justify-center mx-auto shadow-lg shadow-indigo-200 border-4 border-white">
+        <div className="w-20 h-20 rounded-full bg-indigo-600 text-white font-extrabold text-3xl flex items-center justify-center mx-auto shadow-lg shadow-indigo-200 border-4 border-white relative">
           {initialLetter}
+          {currentUser.isVipSubscriber && (
+            <span className="absolute -bottom-1 -right-1 bg-amber-500 text-slate-950 p-1.5 rounded-full shadow-md" title="VIP Member">
+              <Crown className="w-4 h-4 fill-current" />
+            </span>
+          )}
         </div>
 
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">{currentUser.name}</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900 flex items-center justify-center gap-2">
+            <span>{currentUser.name}</span>
+            {currentUser.isVipSubscriber && (
+              <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                VIP Member
+              </span>
+            )}
+          </h1>
           <span className="badge bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase mt-1">
             {currentUser.role} Account
           </span>
         </div>
 
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
-          <Award className="w-4 h-4 text-amber-600" />
-          <span>Loyalty Rewards: {currentUser.loyaltyPoints || 350} Points</span>
+        <div className="flex items-center justify-center gap-3 flex-wrap">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+            <Award className="w-4 h-4 text-amber-600" />
+            <span>Loyalty Rewards: {currentUser.loyaltyPoints || 350} Points</span>
+          </div>
+
+          <button
+            onClick={() => setIsSubModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold transition cursor-pointer shadow-md"
+          >
+            <Crown className="w-4 h-4 text-amber-400 fill-current" />
+            <span>{currentUser.isVipSubscriber ? 'Manage VIP Subscription' : 'Upgrade to VIP Prime (₹199)'}</span>
+          </button>
         </div>
       </div>
+
+      <SubscriptionModal isOpen={isSubModalOpen} onClose={() => setIsSubModalOpen(false)} />
 
       {successMsg && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-bold flex items-center gap-2">
