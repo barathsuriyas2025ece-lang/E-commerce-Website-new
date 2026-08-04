@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Package, Pencil, Tag, Filter } from 'lucide-react';
 import { productAPI, fallbackSampleProducts } from '../../services/api';
 import { useNotifications } from '../../context/NotificationContext';
+import { useProducts } from '../../context/ProductContext';
 
 const categoriesList = [
   'All',
@@ -12,7 +13,8 @@ const categoriesList = [
 ];
 
 const AdminProducts = () => {
-  const [products, setProducts] = useState(fallbackSampleProducts);
+  const { products: contextProducts, addProductToState, updateProductInState, deleteProductFromState, refreshProducts } = useProducts();
+  const [products, setLocalProducts] = useState(contextProducts || fallbackSampleProducts);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -30,23 +32,14 @@ const AdminProducts = () => {
     imageUrl: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800',
   });
 
-  const fetchProducts = async () => {
-    try {
-      const res = await productAPI.getProducts({});
-      if (res.data?.success && Array.isArray(res.data.products) && res.data.products.length > 0) {
-        setProducts(res.data.products);
-      } else {
-        setProducts(fallbackSampleProducts);
-      }
-    } catch (err) {
-      console.error('Error fetching admin products:', err);
-      setProducts(fallbackSampleProducts);
-    }
-  };
+  const { addNotification } = useNotifications();
 
+  // Sync local products with context products
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (contextProducts && contextProducts.length > 0) {
+      setLocalProducts(contextProducts);
+    }
+  }, [contextProducts]);
 
   const resetFormData = () => {
     setFormData({
@@ -61,8 +54,6 @@ const AdminProducts = () => {
       imageUrl: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800',
     });
   };
-
-  const { addNotification } = useNotifications();
 
   const handleCreateProduct = async (e) => {
     e.preventDefault();
@@ -93,7 +84,11 @@ const AdminProducts = () => {
         ...newProdData,
       };
 
-      setProducts((prev) => [createdProduct, ...prev]);
+      // Instantly update both global ProductContext and local table state
+      addProductToState(createdProduct);
+      setLocalProducts((prev) => [createdProduct, ...prev]);
+      refreshProducts();
+
       if (addNotification) {
         addNotification({
           title: '✨ New Product Added',
@@ -109,7 +104,8 @@ const AdminProducts = () => {
   };
 
   const handleOpenEditModal = (product) => {
-    setEditingId(product._id);
+    const pId = (product._id || product.id || '').toString();
+    setEditingId(pId);
     const priceVal = product.price || 0;
     const origVal = product.originalPrice || priceVal;
     const discountVal = origVal > priceVal ? Math.round(((origVal - priceVal) / origVal) * 100) : (product.discountPercent || 0);
@@ -130,6 +126,8 @@ const AdminProducts = () => {
 
   const handleUpdateProduct = async (e) => {
     e.preventDefault();
+    if (!editingId) return;
+
     try {
       const priceNum = Number(formData.price);
       let origPriceNum = Number(formData.originalPrice);
@@ -140,6 +138,7 @@ const AdminProducts = () => {
       }
 
       const updatedData = {
+        _id: editingId,
         name: formData.name,
         description: formData.description,
         price: priceNum,
@@ -153,14 +152,17 @@ const AdminProducts = () => {
 
       await productAPI.updateProduct(editingId, updatedData);
 
-      setProducts((prev) =>
-        prev.map((p) => (p._id === editingId ? { ...p, ...updatedData } : p))
+      // Instantly update both global ProductContext and local table state
+      updateProductInState(updatedData);
+      setLocalProducts((prev) =>
+        prev.map((p) => ((p._id || p.id || '').toString() === editingId.toString() ? { ...p, ...updatedData } : p))
       );
+      refreshProducts();
 
       if (addNotification) {
         addNotification({
-          title: '🔥 Price & Details Updated',
-          subtitle: `${formData.name} price updated to ₹${priceNum.toLocaleString()}`,
+          title: '🔥 Product Details & Price Updated',
+          subtitle: `${formData.name} updated successfully in user panel & catalog`,
           type: 'promo',
         });
       }
@@ -174,14 +176,20 @@ const AdminProducts = () => {
   };
 
   const handleDeleteProduct = async (id) => {
+    if (!id) return;
+    const targetStr = id.toString();
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        await productAPI.deleteProduct(id);
-        setProducts((prev) => prev.filter((p) => p._id !== id));
+        await productAPI.deleteProduct(targetStr);
       } catch (err) {
         console.error('Error deleting product:', err);
-        setProducts((prev) => prev.filter((p) => p._id !== id));
       }
+
+      // Instantly update both global ProductContext and local table state
+      deleteProductFromState(targetStr);
+      setLocalProducts((prev) => prev.filter((p) => (p._id || p.id || '').toString() !== targetStr));
+      refreshProducts();
+
       if (addNotification) {
         addNotification({
           title: '📦 Inventory Updated',
@@ -266,6 +274,7 @@ const AdminProducts = () => {
               </tr>
             ) : (
               filteredProducts.map((p) => {
+                const pId = (p._id || p.id || '').toString();
                 const price = p.price || 0;
                 const origPrice = p.originalPrice || price;
                 const discountPct = origPrice > price 
@@ -273,7 +282,7 @@ const AdminProducts = () => {
                   : (p.discountPercent || 0);
 
                 return (
-                  <tr key={p._id} className="hover:bg-slate-50 transition">
+                  <tr key={pId} className="hover:bg-slate-50 transition">
                     <td className="p-4 font-bold text-slate-900">
                       <div className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-indigo-600 shrink-0" />
@@ -321,14 +330,14 @@ const AdminProducts = () => {
                       <div className="flex items-center justify-end gap-1">
                         <button 
                           onClick={() => handleOpenEditModal(p)} 
-                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" 
+                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer" 
                           title="Edit Name, Price & Discount"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button 
-                          onClick={() => handleDeleteProduct(p._id)} 
-                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" 
+                          onClick={() => handleDeleteProduct(pId)} 
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer" 
                           title="Delete Product"
                         >
                           <Trash2 className="w-4 h-4" />

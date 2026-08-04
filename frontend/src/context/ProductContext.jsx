@@ -27,7 +27,7 @@ export const ProductProvider = ({ children }) => {
       originalPrice: 79990,
       category: 'Electronics & Laptops',
       brand: 'ASUS',
-      stock: 4, // Low stock sample
+      stock: 4,
       images: ['https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=800'],
       isFeatured: true,
       rating: 4.7,
@@ -64,30 +64,51 @@ export const ProductProvider = ({ children }) => {
   ]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const syncProducts = async () => {
-      try {
-        const res = await productAPI.getProducts({});
-        if (res.data.success && res.data.products?.length > 0) {
-          setProducts(res.data.products);
-        }
-      } catch (err) {
-        // Cached state ready
+  const refreshProducts = async () => {
+    try {
+      const res = await productAPI.getProducts({});
+      if (res.data?.success && Array.isArray(res.data.products) && res.data.products.length > 0) {
+        setProducts(res.data.products);
       }
-    };
-    syncProducts();
+    } catch (err) {
+      console.warn('Product refresh fallback:', err?.message);
+    }
+  };
+
+  useEffect(() => {
+    refreshProducts();
   }, []);
 
   const productMap = useMemo(() => {
     const map = new Map();
-    products.forEach((p) => map.set(p._id.toString(), p));
+    products.forEach((p) => map.set((p._id || p.id || '').toString(), p));
     return map;
   }, [products]);
 
   const getProductById = (id) => {
     if (!id) return null;
     const lookupKey = typeof id === 'string' ? id : id.toString();
-    return productMap.get(lookupKey) || products.find((product) => product._id.toString() === lookupKey) || null;
+    return productMap.get(lookupKey) || products.find((product) => (product._id || product.id || '').toString() === lookupKey) || null;
+  };
+
+  // Real-time State Mutation Handlers for Admin Operations
+  const addProductToState = (newProduct) => {
+    if (!newProduct) return;
+    setProducts((prev) => [newProduct, ...prev.filter((p) => (p._id || p.id || '').toString() !== (newProduct._id || newProduct.id || '').toString())]);
+  };
+
+  const updateProductInState = (updatedProduct) => {
+    if (!updatedProduct) return;
+    const targetId = (updatedProduct._id || updatedProduct.id || '').toString();
+    setProducts((prev) =>
+      prev.map((p) => ((p._id || p.id || '').toString() === targetId ? { ...p, ...updatedProduct } : p))
+    );
+  };
+
+  const deleteProductFromState = (productId) => {
+    if (!productId) return;
+    const targetId = productId.toString();
+    setProducts((prev) => prev.filter((p) => (p._id || p.id || '').toString() !== targetId));
   };
 
   const deductStock = (orderItems = []) => {
@@ -120,7 +141,7 @@ export const ProductProvider = ({ children }) => {
 
     setProducts((prevProducts) =>
       prevProducts.map((p) => {
-        if (p._id.toString() === productId.toString() || p._id === productId) {
+        if ((p._id || p.id || '').toString() === productId.toString()) {
           const currentReviews = p.reviews ? [...p.reviews] : [];
           const userIdStr = (user?.id || user?._id || 'u_guest').toString();
           const existingIndex = currentReviews.findIndex(
@@ -165,7 +186,7 @@ export const ProductProvider = ({ children }) => {
 
     setProducts((prevProducts) =>
       prevProducts.map((p) => {
-        if (p._id.toString() === productId.toString() || p._id === productId) {
+        if ((p._id || p.id || '').toString() === productId.toString()) {
           const currentReviews = (p.reviews || []).filter(
             (r) => r._id?.toString() !== reviewId?.toString()
           );
@@ -189,7 +210,21 @@ export const ProductProvider = ({ children }) => {
   };
 
   return (
-    <ProductContext.Provider value={{ products, loading, getProductById, deductStock, addOrUpdateReview, deleteReview }}>
+    <ProductContext.Provider
+      value={{
+        products,
+        setProducts,
+        loading,
+        refreshProducts,
+        getProductById,
+        addProductToState,
+        updateProductInState,
+        deleteProductFromState,
+        deductStock,
+        addOrUpdateReview,
+        deleteReview,
+      }}
+    >
       {children}
     </ProductContext.Provider>
   );

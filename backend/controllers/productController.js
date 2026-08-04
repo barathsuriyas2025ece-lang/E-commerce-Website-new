@@ -213,7 +213,7 @@ const updateProduct = async (req, res) => {
       if (updated) return res.json({ success: true, product: updated });
     } catch (err) {}
 
-    const index = memoryProducts.findIndex((p) => p._id.toString() === id.toString());
+    const index = memoryProducts.findIndex((p) => (p._id || p.id || '').toString() === id.toString());
     if (index !== -1) {
       memoryProducts[index] = { ...memoryProducts[index], ...req.body };
       return res.json({ success: true, product: memoryProducts[index] });
@@ -232,7 +232,7 @@ const deleteProduct = async (req, res) => {
       await Product.findByIdAndDelete(id);
     } catch (err) {}
 
-    memoryProducts = memoryProducts.filter((p) => p._id.toString() !== id.toString());
+    memoryProducts = memoryProducts.filter((p) => (p._id || p.id || '').toString() !== id.toString());
     res.json({ success: true, message: 'Product removed successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
