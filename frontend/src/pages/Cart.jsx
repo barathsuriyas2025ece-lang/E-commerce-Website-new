@@ -45,34 +45,37 @@ const Cart = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Item List */}
         <div className="lg:col-span-2 space-y-4">
-          {cartItems.map((item) => (
-            <div key={item._id} className="glass-panel p-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
-              <div className="flex items-center gap-4 w-full sm:w-auto">
-                <img src={item.images?.[0]} alt={item.name} className="w-16 h-16 rounded-xl object-cover bg-slate-50 border border-slate-100 shrink-0" />
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm line-clamp-1">{item.name}</h3>
-                  <p className="text-xs text-indigo-600 font-extrabold">₹{item.price.toLocaleString()}</p>
+          {cartItems.map((item) => {
+            const pId = item._id || item.id;
+            return (
+              <div key={pId} className="glass-panel p-4 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                  <img src={item.images?.[0]} alt={item.name} className="w-16 h-16 rounded-xl object-cover bg-slate-50 border border-slate-100 shrink-0" />
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm line-clamp-1">{item.name}</h3>
+                    <p className="text-xs text-indigo-600 font-extrabold">₹{item.price?.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+                  {/* Quantity adjustment */}
+                  <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl">
+                    <button onClick={() => updateQuantity(pId, item.quantity - 1)} className="px-2.5 py-1 text-slate-700 hover:bg-slate-200 font-bold text-xs rounded-l-xl">-</button>
+                    <span className="px-3 text-xs font-bold text-slate-900">{item.quantity}</span>
+                    <button onClick={() => updateQuantity(pId, item.quantity + 1)} className="px-2.5 py-1 text-slate-700 hover:bg-slate-200 font-bold text-xs rounded-r-xl">+</button>
+                  </div>
+
+                  <div className="text-sm font-extrabold text-slate-900">
+                    ₹{(item.price * item.quantity).toLocaleString()}
+                  </div>
+
+                  <button onClick={() => removeFromCart(pId)} className="p-2 text-slate-400 hover:text-red-600 transition">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-
-              <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
-                {/* Quantity adjustment */}
-                <div className="flex items-center bg-slate-100 border border-slate-200 rounded-xl">
-                  <button onClick={() => updateQuantity(item._id, item.quantity - 1)} className="px-2.5 py-1 text-slate-700 hover:bg-slate-200 font-bold text-xs rounded-l-xl">-</button>
-                  <span className="px-3 text-xs font-bold text-slate-900">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item._id, item.quantity + 1)} className="px-2.5 py-1 text-slate-700 hover:bg-slate-200 font-bold text-xs rounded-r-xl">+</button>
-                </div>
-
-                <div className="text-sm font-extrabold text-slate-900">
-                  ₹{(item.price * item.quantity).toLocaleString()}
-                </div>
-
-                <button onClick={() => removeFromCart(item._id)} className="p-2 text-slate-400 hover:text-red-600 transition">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Order Summary Box */}

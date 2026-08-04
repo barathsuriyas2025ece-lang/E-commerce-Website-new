@@ -20,7 +20,19 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('cartItems', JSON.stringify(cartItems));
   }, [cartItems]);
 
+  const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  // Logical fix: Automatically clear applied coupon if subtotal falls below minimum purchase requirement
+  useEffect(() => {
+    if (appliedCoupon && (subtotal < (appliedCoupon.minPurchaseAmount || 0) || cartItems.length === 0)) {
+      setAppliedCoupon(null);
+    }
+  }, [subtotal, appliedCoupon, cartItems.length]);
+
   const addToCart = (product, quantity = 1) => {
+    if (!product) return false;
+    const pId = (product._id || product.id || '').toString();
+
     const maxStock = product.stock !== undefined
       ? product.stock
       : (product.countInStock !== undefined ? product.countInStock : 10);
@@ -33,8 +45,7 @@ export const CartProvider = ({ children }) => {
 
     let capped = false;
     setCartItems((prevItems) => {
-      const pId = product._id || product.id;
-      const existing = prevItems.find((item) => (item._id || item.id) === pId);
+      const existing = prevItems.find((item) => (item._id || item.id || '').toString() === pId);
       const currentQty = existing ? existing.quantity : 0;
       const desiredQty = currentQty + quantity;
 
@@ -43,7 +54,7 @@ export const CartProvider = ({ children }) => {
         const addable = Math.max(1, maxStock);
         if (existing) {
           return prevItems.map((item) =>
-            (item._id || item.id) === pId ? { ...item, quantity: addable, stock: maxStock } : item
+            (item._id || item.id || '').toString() === pId ? { ...item, quantity: addable, stock: maxStock } : item
           );
         }
         return [...prevItems, { ...product, quantity: addable, stock: maxStock }];
@@ -51,7 +62,7 @@ export const CartProvider = ({ children }) => {
 
       if (existing) {
         return prevItems.map((item) =>
-          (item._id || item.id) === pId ? { ...item, quantity: desiredQty, stock: maxStock } : item
+          (item._id || item.id || '').toString() === pId ? { ...item, quantity: desiredQty, stock: maxStock } : item
         );
       }
       return [...prevItems, { ...product, quantity: desiredQty, stock: maxStock }];
@@ -67,17 +78,23 @@ export const CartProvider = ({ children }) => {
   };
 
   const removeFromCart = (productId) => {
-    setCartItems((prevItems) => prevItems.filter((item) => (item._id || item.id) !== productId));
+    if (!productId) return;
+    const targetStr = productId.toString();
+    setCartItems((prevItems) => prevItems.filter((item) => (item._id || item.id || '').toString() !== targetStr));
   };
 
   const updateQuantity = (productId, newQty) => {
+    if (!productId) return;
+    const targetStr = productId.toString();
+
     if (newQty <= 0) {
       removeFromCart(productId);
       return;
     }
+
     setCartItems((prevItems) =>
       prevItems.map((item) => {
-        if ((item._id || item.id) === productId) {
+        if ((item._id || item.id || '').toString() === targetStr) {
           const maxStock = item.stock !== undefined
             ? item.stock
             : (item.countInStock !== undefined ? item.countInStock : 10);
@@ -99,7 +116,6 @@ export const CartProvider = ({ children }) => {
     setAppliedCoupon(null);
   };
 
-  const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const discountAmount = appliedCoupon ? Math.min((subtotal * appliedCoupon.discountPercentage) / 100, 5000) : 0;
   const tax = Math.round(subtotal * 0.05);
   const total = Math.max(0, subtotal + tax - discountAmount);

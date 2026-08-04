@@ -34,10 +34,15 @@ const Shop = () => {
 
   let filteredProducts = (products || []).filter((p) => {
     let matchesCategory = selectedCategory === 'all' || p.category?.toLowerCase().includes(selectedCategory.toLowerCase());
-    let matchesSearch = !searchQuery || p.name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.category?.toLowerCase().includes(searchQuery.toLowerCase());
+    let matchesSearch =
+      !searchQuery ||
+      p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description?.toLowerCase().includes(searchQuery.toLowerCase());
     let matchesPrice = (p.price || 0) <= maxPrice;
     let matchesRating = (p.rating || 4.5) >= minRating;
-    let matchesStock = !onlyInStock || (p.stock || 10) > 0;
+    let matchesStock = !onlyInStock || (p.stock !== undefined ? p.stock : (p.countInStock || 10)) > 0;
     return matchesCategory && matchesSearch && matchesPrice && matchesRating && matchesStock;
   });
 
