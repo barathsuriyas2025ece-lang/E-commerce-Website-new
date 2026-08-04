@@ -1,5 +1,13 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
 const { sampleProducts, sampleCategories, sampleCoupons } = require('../utils/seedData');
+
+// Resolve DNS TXT lookup issues (queryTxt ENOTFOUND / EDESTRUCTION) in Node.js for MongoDB Atlas
+try {
+  if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+  }
+} catch (e) {}
 
 let isConnected = false;
 let isFallbackMode = false;
@@ -59,7 +67,10 @@ const connectDB = async () => {
   }
 
   try {
-    const conn = await mongoose.connect(mongoURI);
+    const conn = await mongoose.connect(mongoURI, {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 10000,
+    });
     isConnected = true;
     console.log(`✅ MongoDB Atlas / Local Connected: ${conn.connection.host}`);
     await seedInitialDataIfEmpty();
