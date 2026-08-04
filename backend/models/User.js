@@ -15,9 +15,10 @@ const userSchema = new mongoose.Schema(
       country: { type: String, default: 'India' },
     },
     loyaltyPoints: { type: Number, default: 100 },
-    avatar: { type: String, default: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150' },
+    avatar: { type: String, default: '' },
   },
   { timestamps: true }
 );
 
 module.exports = mongoose.models.User || mongoose.model('User', userSchema);
+

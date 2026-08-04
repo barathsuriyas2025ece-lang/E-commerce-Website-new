@@ -177,26 +177,26 @@ const getWeightedRecommendations = async (req, res) => {
 const createProduct = async (req, res) => {
   try {
     const { name, description, price, category, stock, images, brand, isFeatured } = req.body;
-    const newProd = {
-      _id: '6500000000000000000000' + Math.floor(10 + Math.random() * 89),
+    const productData = {
       name,
       description,
       price: Number(price),
       category,
       brand: brand || 'Generic',
       stock: Number(stock) || 10,
-      images: images || ['https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'],
+      images: images && images.length ? images : ['https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'],
       isFeatured: Boolean(isFeatured),
       rating: 4.5,
       numReviews: 0,
       reviews: [],
-      createdAt: new Date(),
     };
 
     try {
-      const created = await Product.create(newProd);
+      const created = await Product.create(productData);
       return res.status(201).json({ success: true, product: created });
     } catch (err) {
+      console.error('MongoDB Product create warning:', err.message);
+      const newProd = { _id: new mongoose.Types.ObjectId().toString(), ...productData, createdAt: new Date() };
       memoryProducts.unshift(newProd);
       return res.status(201).json({ success: true, product: newProd });
     }

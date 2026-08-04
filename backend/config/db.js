@@ -2,8 +2,9 @@ const mongoose = require('mongoose');
 const dns = require('dns');
 const { sampleProducts, sampleCategories, sampleCoupons } = require('../utils/seedData');
 
-// Resolve DNS TXT lookup issues (queryTxt ENOTFOUND / EDESTRUCTION) in Node.js for MongoDB Atlas
+// Resolve DNS TXT/SRV lookup issues (querySrv ECONNREFUSED / queryTxt ENOTFOUND) in Node.js for MongoDB Atlas
 try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
   if (dns.setDefaultResultOrder) {
     dns.setDefaultResultOrder('ipv4first');
   }
@@ -38,20 +39,44 @@ const seedInitialDataIfEmpty = async () => {
       await Coupon.insertMany(sampleCoupons);
     }
 
-    const adminCount = await User.countDocuments({ role: 'admin' });
-    if (adminCount === 0) {
-      console.log('🌱 Creating default Admin user in MongoDB Atlas database...');
+    const userCount = await User.countDocuments();
+    if (userCount === 0) {
+      console.log('🌱 Seeding initial Users into MongoDB Atlas database...');
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('admin123', salt);
-      await User.create({
-        name: 'System Administrator',
-        email: 'barathsuriya.s2025ece@sece.ac.in',
-        password: hashedPassword,
-        role: 'admin',
-        loyaltyPoints: 1000,
-      });
+      const adminPassword = await bcrypt.hash('admin123', salt);
+      const userPassword = await bcrypt.hash('user123', salt);
+
+      await User.insertMany([
+        {
+          name: 'System Administrator',
+          email: 'barathsuriya.s2025ece@sece.ac.in',
+          password: adminPassword,
+          role: 'admin',
+          loyaltyPoints: 1000,
+          phone: '+91 9876543210',
+          address: { street: '123 Tech Park', city: 'Coimbatore', state: 'Tamil Nadu', zipCode: '641001', country: 'India' }
+        },
+        {
+          name: 'Alex Johnson',
+          email: 'alex@example.com',
+          password: userPassword,
+          role: 'customer',
+          loyaltyPoints: 250,
+          phone: '+91 9123456789',
+          address: { street: '45 Green Street', city: 'Chennai', state: 'Tamil Nadu', zipCode: '600001', country: 'India' }
+        },
+        {
+          name: 'Sarah Williams',
+          email: 'sarah@example.com',
+          password: userPassword,
+          role: 'customer',
+          loyaltyPoints: 500,
+          phone: '+91 9988776655',
+          address: { street: '78 MG Road', city: 'Bengaluru', state: 'Karnataka', zipCode: '560001', country: 'India' }
+        }
+      ]);
     }
-    console.log('✅ MongoDB Atlas Seeder: Products, Categories, Coupons & Admin User indexed in cluster0.oxzely0.mongodb.net/nexusmart');
+    console.log('✅ MongoDB Atlas Seeder: Products, Categories, Coupons & Users indexed in cluster0.oxzely0.mongodb.net/nexusmart');
   } catch (err) {
     console.error('Error auto-seeding MongoDB Atlas data:', err.message);
   }

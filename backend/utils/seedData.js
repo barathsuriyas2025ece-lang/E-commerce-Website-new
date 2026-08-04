@@ -99,8 +99,22 @@ const sampleProducts = [
 ];
 
 const sampleCoupons = [
-  { code: 'SAVE10', discountPercentage: 10, maxDiscountAmount: 2000, minPurchaseAmount: 1000, isActive: true },
-  { code: 'WELCOME20', discountPercentage: 20, maxDiscountAmount: 3000, minPurchaseAmount: 1500, isActive: true },
+  {
+    code: 'SAVE10',
+    discountPercentage: 10,
+    maxDiscountAmount: 2000,
+    minPurchaseAmount: 1000,
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+    isActive: true,
+  },
+  {
+    code: 'WELCOME20',
+    discountPercentage: 20,
+    maxDiscountAmount: 3000,
+    minPurchaseAmount: 1500,
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+    isActive: true,
+  },
 ];
 
 module.exports = { sampleCategories, sampleProducts, sampleCoupons };
