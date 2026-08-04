@@ -88,8 +88,9 @@ const connectDB = async () => {
 
   try {
     const conn = await mongoose.connect(mongoURI, {
-      serverSelectionTimeoutMS: 4000,
-      connectTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 30000,
+      maxPoolSize: 10,
     });
     isConnected = true;
     isFallbackMode = false;
