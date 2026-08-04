@@ -24,11 +24,42 @@ const Navbar = () => {
   const searchRef = useRef(null);
   const navigate = useNavigate();
 
-  // Filter matching products for instant mega-search suggestion box
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try {
+      const saved = localStorage.getItem('nexus_recent_searches');
+      return saved ? JSON.parse(saved) : ['MacBook', 'Sony Headphones', 'Wireless Earbuds'];
+    } catch {
+      return ['MacBook', 'Sony Headphones', 'Wireless Earbuds'];
+    }
+  });
+
+  const saveRecentSearch = (term) => {
+    if (!term || !term.trim()) return;
+    const clean = term.trim();
+    const updated = [clean, ...recentSearches.filter((item) => item.toLowerCase() !== clean.toLowerCase())].slice(0, 5);
+    setRecentSearches(updated);
+    try {
+      localStorage.setItem('nexus_recent_searches', JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+    localStorage.removeItem('nexus_recent_searches');
+  };
+
+  // Filter matching products across name, category, brand, description, and tags
   const searchSuggestions = (products || []).filter((p) => {
     if (!searchTerm.trim()) return false;
     const q = searchTerm.toLowerCase();
-    return p.name?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q);
+    return (
+      p.name?.toLowerCase().includes(q) ||
+      p.category?.toLowerCase().includes(q) ||
+      p.brand?.toLowerCase().includes(q) ||
+      p.description?.toLowerCase().includes(q)
+    );
   }).slice(0, 5);
 
   // Close search suggestions when clicking outside
@@ -45,9 +76,25 @@ const Navbar = () => {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchTerm.trim()) {
+      saveRecentSearch(searchTerm.trim());
       setIsSearchFocused(false);
       navigate(`/shop?search=${encodeURIComponent(searchTerm.trim())}`);
     }
+  };
+
+  const highlightMatch = (text, query) => {
+    if (!query || !text) return text;
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <mark key={i} className="bg-indigo-100 text-indigo-900 rounded px-0.5 font-black">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
   };
 
   const handleLogout = () => {
@@ -99,25 +146,29 @@ const Navbar = () => {
 
             {/* Instant Mega Search Overlay Dropdown */}
             {isSearchFocused && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 z-50 space-y-4 animate-fade-in">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 z-50 space-y-4 animate-fadeIn">
                 {/* Instant Product Suggestions */}
                 {searchTerm.trim() ? (
                   <div className="space-y-2">
                     <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center justify-between">
                       <span>Matching Products</span>
-                      <span>{searchSuggestions.length} results</span>
+                      <span>{searchSuggestions.length} matches</span>
                     </div>
                     {searchSuggestions.length === 0 ? (
-                      <div className="text-xs text-slate-400 py-3 text-center">No exact matches found</div>
+                      <div className="text-xs text-slate-400 py-4 text-center space-y-1">
+                        <p className="font-semibold text-slate-600">No matching products found</p>
+                        <p className="text-[11px]">Try checking spelling or using different keywords.</p>
+                      </div>
                     ) : (
                       searchSuggestions.map((prod) => (
                         <div
                           key={prod._id || prod.id}
                           onClick={() => {
+                            saveRecentSearch(prod.name);
                             setIsSearchFocused(false);
                             navigate(`/product/${prod._id || prod.id}`);
                           }}
-                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-indigo-50/60 transition cursor-pointer group"
+                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-indigo-50/70 transition cursor-pointer group"
                         >
                           <img
                             src={prod.images?.[0] || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=200'}
@@ -125,35 +176,77 @@ const Navbar = () => {
                             className="w-10 h-10 object-cover rounded-lg bg-slate-100 shrink-0"
                           />
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 truncate">{prod.name}</h4>
-                            <span className="text-[10px] text-slate-400 capitalize">{prod.category}</span>
+                            <h4 className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 truncate">
+                              {highlightMatch(prod.name, searchTerm)}
+                            </h4>
+                            <span className="text-[10px] text-slate-400 capitalize">
+                              {prod.category} {prod.brand ? `• ${prod.brand}` : ''}
+                            </span>
                           </div>
-                          <div className="text-xs font-extrabold text-slate-900 shrink-0">₹{prod.price?.toLocaleString()}</div>
+                          <div className="text-xs font-extrabold text-slate-900 shrink-0">
+                            ₹{prod.price?.toLocaleString()}
+                          </div>
                         </div>
                       ))
                     )}
                   </div>
                 ) : (
-                  /* Trending Searches & Quick Filters */
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                      <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
-                      <span>Trending Searches</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {trendingSearches.map((term, i) => (
-                        <button
-                          key={i}
-                          onClick={() => {
-                            setSearchTerm(term);
-                            setIsSearchFocused(false);
-                            navigate(`/shop?search=${encodeURIComponent(term)}`);
-                          }}
-                          className="px-3 py-1 rounded-full bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-xs font-semibold text-slate-700 transition cursor-pointer"
-                        >
-                          {term}
-                        </button>
-                      ))}
+                  /* Recent Searches & Trending Terms */
+                  <div className="space-y-4">
+                    {/* Recent Searches */}
+                    {recentSearches.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                          <span>Recent Searches</span>
+                          <button
+                            type="button"
+                            onClick={clearRecentSearches}
+                            className="hover:text-slate-600 transition cursor-pointer lowercase"
+                          >
+                            clear all
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {recentSearches.map((term, i) => (
+                            <button
+                              key={i}
+                              onClick={() => {
+                                setSearchTerm(term);
+                                saveRecentSearch(term);
+                                setIsSearchFocused(false);
+                                navigate(`/shop?search=${encodeURIComponent(term)}`);
+                              }}
+                              className="px-3 py-1 rounded-full bg-slate-100 hover:bg-indigo-100 hover:text-indigo-700 text-xs font-semibold text-slate-700 transition cursor-pointer flex items-center gap-1.5"
+                            >
+                              <span>{term}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Trending Searches */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                        <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Trending Searches</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {trendingSearches.map((term, i) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              setSearchTerm(term);
+                              saveRecentSearch(term);
+                              setIsSearchFocused(false);
+                              navigate(`/shop?search=${encodeURIComponent(term)}`);
+                            }}
+                            className="px-3 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold transition cursor-pointer"
+                          >
+                            🔥 {term}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}

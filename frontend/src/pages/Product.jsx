@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Star, ShoppingCart, Heart, Bot, MessageSquare, Edit2, Trash2, CheckCircle2, LogIn, Send, ShieldCheck, Truck, RefreshCw, Award, Plus, Sparkles } from 'lucide-react';
+import { Star, ShoppingCart, Heart, Bot, MessageSquare, Edit2, Trash2, CheckCircle2, LogIn, Send, ShieldCheck, Truck, RefreshCw, Award, Plus, Sparkles, ZoomIn } from 'lucide-react';
 import { useProducts } from '../context/ProductContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAI } from '../context/AIContext';
 import { useAuth } from '../context/AuthContext';
+import { useRecentlyViewed } from '../hooks/useRecentlyViewed';
+import RecentlyViewed from '../components/RecentlyViewed';
+import ImageLightboxModal from '../components/ImageLightboxModal';
 
 const Product = () => {
   const { id } = useParams();
@@ -14,11 +17,13 @@ const Product = () => {
   const { user } = useAuth();
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   const product = getProductById(id);
   const { addToCart, setIsCartOpen } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { setIsAiOpen, sendMessage } = useAI();
+  const { recentlyViewed, addRecentlyViewed } = useRecentlyViewed();
 
   // Review Form State
   const [rating, setRating] = useState(5);
@@ -26,6 +31,12 @@ const Product = () => {
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (product) {
+      addRecentlyViewed(product);
+    }
+  }, [product, addRecentlyViewed]);
 
   const currentUserId = user?.id || user?._id || '';
   const reviewsList = product?.reviews || [];
@@ -97,13 +108,31 @@ const Product = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* Left: Image Gallery */}
         <div className="space-y-4">
-          <div className="glass-panel p-4 rounded-3xl bg-white border border-slate-200 shadow-sm aspect-square overflow-hidden flex items-center justify-center">
+          <div className="glass-panel p-4 rounded-3xl bg-white border border-slate-200 shadow-sm aspect-square overflow-hidden flex items-center justify-center relative group">
             <img
               src={productImages[selectedImageIdx] || productImages[0]}
               alt={product.name}
-              className="w-full h-full object-cover rounded-2xl hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500 cursor-pointer"
+              onClick={() => setIsLightboxOpen(true)}
             />
+            {/* Zoom Lightbox Trigger Button */}
+            <button
+              onClick={() => setIsLightboxOpen(true)}
+              className="absolute bottom-6 right-6 p-3 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white backdrop-blur-md shadow-lg transition opacity-0 group-hover:opacity-100 cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+              title="Click to Zoom Fullscreen"
+            >
+              <ZoomIn className="w-4 h-4" />
+              <span className="hidden sm:inline">Zoom</span>
+            </button>
           </div>
+
+          <ImageLightboxModal
+            images={productImages}
+            selectedIdx={selectedImageIdx}
+            isOpen={isLightboxOpen}
+            onClose={() => setIsLightboxOpen(false)}
+            onSelectIdx={setSelectedImageIdx}
+          />
 
           {/* Thumbnail Selectors */}
           {productImages.length > 1 && (
@@ -497,8 +526,31 @@ const Product = () => {
           )}
         </div>
       </div>
+
+      {/* 🕒 Recently Viewed Products Carousel */}
+      <RecentlyViewed
+        products={recentlyViewed.filter((p) => (p._id || p.id) !== (product._id || product.id))}
+      />
+
+      {/* 📱 Sticky Mobile Add-to-Cart Bar */}
+      <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 z-40 lg:hidden shadow-2xl flex items-center justify-between gap-3">
+        <div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Price</span>
+          <span className="text-lg font-black text-slate-900">₹{product.price?.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => addToCart(product, quantity)}
+            className="btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-2.5 px-5 text-xs rounded-xl inline-flex items-center gap-1.5 shadow-md cursor-pointer"
+          >
+            <ShoppingCart className="w-4 h-4 text-white" />
+            <span>Add to Cart</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
 
 export default Product;
+
