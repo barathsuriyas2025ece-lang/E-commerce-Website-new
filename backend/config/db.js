@@ -22,25 +22,25 @@ const seedInitialDataIfEmpty = async () => {
 
     const productCount = await Product.countDocuments();
     if (productCount === 0) {
-      console.log('🌱 Seeding initial products into MongoDB database...');
+      console.log('🌱 Seeding initial products into MongoDB Atlas database...');
       await Product.insertMany(sampleProducts);
     }
 
     const categoryCount = await Category.countDocuments();
     if (categoryCount === 0) {
-      console.log('🌱 Seeding initial categories into MongoDB database...');
+      console.log('🌱 Seeding initial categories into MongoDB Atlas database...');
       await Category.insertMany(sampleCategories);
     }
 
     const couponCount = await Coupon.countDocuments();
     if (couponCount === 0) {
-      console.log('🌱 Seeding initial coupons into MongoDB database...');
+      console.log('🌱 Seeding initial coupons into MongoDB Atlas database...');
       await Coupon.insertMany(sampleCoupons);
     }
 
     const adminCount = await User.countDocuments({ role: 'admin' });
     if (adminCount === 0) {
-      console.log('🌱 Creating default Admin user in MongoDB database...');
+      console.log('🌱 Creating default Admin user in MongoDB Atlas database...');
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash('admin123', salt);
       await User.create({
@@ -51,14 +51,14 @@ const seedInitialDataIfEmpty = async () => {
         loyaltyPoints: 1000,
       });
     }
-    console.log('✅ MongoDB Seeder: Products, Categories, Coupons & Admin User indexed in database nexusmart');
+    console.log('✅ MongoDB Atlas Seeder: Products, Categories, Coupons & Admin User indexed in cluster0.oxzely0.mongodb.net/nexusmart');
   } catch (err) {
-    console.error('Error auto-seeding MongoDB data:', err.message);
+    console.error('Error auto-seeding MongoDB Atlas data:', err.message);
   }
 };
 
 const connectDB = async () => {
-  const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/nexusmart';
+  const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://barathsuriyas2025ece_db_user:EOordu3mFwp9fOjw@cluster0.oxzely0.mongodb.net/nexusmart?retryWrites=true&w=majority';
 
   try {
     const conn = await mongoose.connect(mongoURI, {
@@ -66,11 +66,11 @@ const connectDB = async () => {
       connectTimeoutMS: 10000,
     });
     isConnected = true;
-    console.log(`✅ MongoDB Atlas / Local Connected: ${conn.connection.host}`);
+    console.log(`✅ MongoDB Atlas Connected: ${conn.connection.host}`);
     await seedInitialDataIfEmpty();
     return true;
   } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`);
+    console.error(`❌ MongoDB Atlas Connection Warning: ${error.message}`);
     console.log('🚀 Defaulting to Intelligent In-Memory Storage Mode for seamless operation.');
     isFallbackMode = true;
     return false;
