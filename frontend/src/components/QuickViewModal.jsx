@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, ShoppingCart, Heart, Check, Truck } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { X, Star, ShoppingCart, Heart, Check, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 
-const QuickViewModal = ({ product, isOpen, onClose }) => {
+const QuickViewModal = ({ product, isOpen, onClose, onPrev, onNext }) => {
   const [selectedImg, setSelectedImg] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addedAnimation, setAddedAnimation] = useState(false);
@@ -23,7 +24,7 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen]);
+  }, [isOpen, product]);
 
   if (!isOpen || !product) return null;
 
@@ -43,32 +44,55 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
     setTimeout(() => setAddedAnimation(false), 2000);
   };
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fadeIn"
       role="dialog"
       aria-modal="true"
       aria-labelledby="quick-view-title"
       onClick={onClose}
     >
       <div
-        className="relative bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-3xl overflow-hidden max-h-[90vh] flex flex-col md:flex-row"
+        className="relative bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-3xl overflow-hidden max-h-[92vh] flex flex-col md:flex-row my-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close Button */}
+        {/* Top-Right Close X Button */}
         <button
           onClick={onClose}
           aria-label="Close modal"
-          className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition cursor-pointer"
+          className="absolute top-3 right-3 z-30 w-10 h-10 rounded-full bg-slate-900 text-white hover:bg-slate-800 flex items-center justify-center shadow-lg transition cursor-pointer"
+          title="Close (Esc)"
         >
-          <X className="w-5 h-5" />
+          <X className="w-5 h-5 text-white" />
         </button>
+
+        {/* Previous Product Navigation Button */}
+        {onPrev && (
+          <button
+            onClick={onPrev}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white/90 text-slate-800 hover:bg-indigo-600 hover:text-white shadow-xl flex items-center justify-center transition border border-slate-200 cursor-pointer"
+            title="Previous Product"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+        )}
+
+        {/* Next Product Navigation Button */}
+        {onNext && (
+          <button
+            onClick={onNext}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-white/90 text-slate-800 hover:bg-indigo-600 hover:text-white shadow-xl flex items-center justify-center transition border border-slate-200 cursor-pointer"
+            title="Next Product"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        )}
 
         {/* Left Column: Image Preview */}
         <div className="w-full md:w-1/2 p-6 bg-slate-50 flex flex-col justify-between items-center border-b md:border-b-0 md:border-r border-slate-200">
           <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-white shadow-inner flex items-center justify-center">
             <img
-              src={images[selectedImg]}
+              src={images[selectedImg] || images[0]}
               alt={product.name}
               className="w-full h-full object-cover transition-all duration-300"
               loading="lazy"
@@ -112,7 +136,7 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
             {/* Rating */}
             <div className="flex items-center gap-2">
               <div className="flex items-center text-amber-500 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 text-xs font-black">
-                <Star className="w-3.5 h-3.5 fill-current mr-1" />
+                <Star className="w-3.5 h-3.5 fill-current mr-1 text-amber-400" />
                 <span>{product.rating || 4.8}</span>
               </div>
               <span className="text-xs text-slate-400 font-medium">({product.numReviews || 124} reviews)</span>
@@ -137,7 +161,7 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
             {/* Guarantees */}
             <div className="grid grid-cols-2 gap-2 text-[11px] font-semibold text-slate-600 pt-2 border-t border-slate-100">
               <div className="flex items-center gap-1.5 text-emerald-700">
-                <Check className="w-4 h-4 text-emerald-600 shrink-0" /> In Stock & Ready to Ship
+                <Check className="w-4 h-4 text-emerald-600 shrink-0" /> In Stock & Ready
               </div>
               <div className="flex items-center gap-1.5 text-slate-600">
                 <Truck className="w-4 h-4 text-indigo-600 shrink-0" /> FREE Delivery Tomorrow
@@ -212,6 +236,8 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default QuickViewModal;

@@ -4,18 +4,22 @@ import { ShoppingCart, Heart, Star, Scale, Truck, Check, Eye } from 'lucide-reac
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAI } from '../context/AIContext';
+import { useProducts } from '../context/ProductContext';
 import QuickViewModal from './QuickViewModal';
 
 const ProductCard = ({ product }) => {
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+  const [activeProduct, setActiveProduct] = useState(product);
   const [isAdded, setIsAdded] = useState(false);
 
-  if (!product) return null;
-
+  const { products } = useProducts();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const { setActiveCompareItems } = useAI();
 
+  if (!product) return null;
+
+  const currentModalProd = activeProduct || product;
   const productId = product._id || product.id || '';
   const isLiked = isInWishlist(productId);
 
@@ -42,6 +46,24 @@ const ProductCard = ({ product }) => {
   };
 
   const brandName = product.brand || product.category || 'NexusMart';
+
+  // Catalog Prev/Next navigation logic for QuickView modal
+  const catalogList = products && products.length > 0 ? products : [product];
+  const currentIdx = catalogList.findIndex(
+    (p) => (p._id || p.id || '').toString() === (currentModalProd._id || currentModalProd.id || '').toString()
+  );
+
+  const handlePrevProduct = () => {
+    if (catalogList.length <= 1) return;
+    const prevIdx = currentIdx > 0 ? currentIdx - 1 : catalogList.length - 1;
+    setActiveProduct(catalogList[prevIdx]);
+  };
+
+  const handleNextProduct = () => {
+    if (catalogList.length <= 1) return;
+    const nextIdx = currentIdx < catalogList.length - 1 ? currentIdx + 1 : 0;
+    setActiveProduct(catalogList[nextIdx]);
+  };
 
   return (
     <>
@@ -83,6 +105,7 @@ const ProductCard = ({ product }) => {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                setActiveProduct(product);
                 setIsQuickViewOpen(true);
               }}
               className="w-full py-2 bg-white/95 backdrop-blur-md text-slate-800 font-bold text-xs rounded-xl shadow-md border border-slate-200/80 flex items-center justify-center gap-1.5 hover:bg-slate-900 hover:text-white transition cursor-pointer"
@@ -142,7 +165,7 @@ const ProductCard = ({ product }) => {
             {/* Rating & Reviews */}
             <div className="flex items-center gap-1.5 pt-0.5">
               <div className="flex items-center text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 text-xs font-extrabold">
-                <Star className="w-3 h-3 fill-current mr-0.5" />
+                <Star className="w-3 h-3 fill-current mr-0.5 text-amber-400" />
                 <span>{product.rating || 4.8}</span>
               </div>
               <span className="text-[11px] text-slate-400 font-medium">({product.numReviews || 248})</span>
@@ -211,11 +234,13 @@ const ProductCard = ({ product }) => {
         </div>
       </div>
 
-      {/* Quick View Modal */}
+      {/* Quick View Modal Portal */}
       <QuickViewModal
-        product={product}
+        product={currentModalProd}
         isOpen={isQuickViewOpen}
         onClose={() => setIsQuickViewOpen(false)}
+        onPrev={catalogList.length > 1 ? handlePrevProduct : null}
+        onNext={catalogList.length > 1 ? handleNextProduct : null}
       />
     </>
   );

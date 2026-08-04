@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ImageLightboxModal = ({ images = [], selectedIdx = 0, isOpen, onClose, onSelectIdx }) => {
   useEffect(() => {
@@ -25,20 +26,21 @@ const ImageLightboxModal = ({ images = [], selectedIdx = 0, isOpen, onClose, onS
 
   if (!isOpen || images.length === 0) return null;
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-fadeIn"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-fadeIn"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
-      {/* Close button */}
+      {/* Close X button */}
       <button
         onClick={onClose}
-        className="absolute top-6 right-6 z-20 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+        className="absolute top-6 right-6 z-30 w-11 h-11 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition cursor-pointer shadow-lg"
         aria-label="Close image lightbox"
+        title="Close (Esc)"
       >
-        <X className="w-6 h-6" />
+        <X className="w-6 h-6 text-white" />
       </button>
 
       {/* Prev Arrow */}
@@ -48,10 +50,11 @@ const ImageLightboxModal = ({ images = [], selectedIdx = 0, isOpen, onClose, onS
             e.stopPropagation();
             onSelectIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
           }}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition cursor-pointer"
           aria-label="Previous image"
+          title="Previous Image"
         >
-          <ChevronLeft className="w-6 h-6" />
+          <ChevronLeft className="w-6 h-6 text-white" />
         </button>
       )}
 
@@ -74,10 +77,11 @@ const ImageLightboxModal = ({ images = [], selectedIdx = 0, isOpen, onClose, onS
             e.stopPropagation();
             onSelectIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
           }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition cursor-pointer"
           aria-label="Next image"
+          title="Next Image"
         >
-          <ChevronRight className="w-6 h-6" />
+          <ChevronRight className="w-6 h-6 text-white" />
         </button>
       )}
 
@@ -87,6 +91,8 @@ const ImageLightboxModal = ({ images = [], selectedIdx = 0, isOpen, onClose, onS
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default ImageLightboxModal;
