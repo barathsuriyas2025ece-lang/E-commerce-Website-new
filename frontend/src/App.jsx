@@ -135,16 +135,6 @@ function App() {
                           </Routes>
                         </main>
 
-                            {/* Admin Routes */}
-                            <Route path="/admin/login" element={<AdminLogin />} />
-                            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                            <Route path="/admin/products" element={<AdminProducts />} />
-                            <Route path="/admin/orders" element={<AdminOrders />} />
-                            <Route path="/admin/users" element={<AdminUsers />} />
-                            <Route path="/admin/coupons" element={<AdminCoupons />} />
-                          </Routes>
-                        </main>
-
                         {/* Instant Slide-over Cart Drawer */}
                         <CartDrawer />
 
