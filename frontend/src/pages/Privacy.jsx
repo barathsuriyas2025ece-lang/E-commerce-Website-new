@@ -13,10 +13,6 @@ const Privacy = () => {
         <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
           Your privacy and security are fundamental to NexusMart. Learn how we protect your personal credentials, order details, and payment transactions.
         </p>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>Last Updated: January 2026 • GDPR & DPDP Compliant</span>
-        </div>
       </section>
 
       {/* Policy Clauses */}
