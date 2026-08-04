@@ -51,20 +51,14 @@ const seedInitialDataIfEmpty = async () => {
         loyaltyPoints: 1000,
       });
     }
+    console.log('✅ MongoDB Seeder: Products, Categories, Coupons & Admin User indexed in database nexusmart');
   } catch (err) {
     console.error('Error auto-seeding MongoDB data:', err.message);
   }
 };
 
 const connectDB = async () => {
-  const mongoURI = process.env.MONGODB_URI;
-
-  if (!mongoURI) {
-    console.log('⚠️  No MONGODB_URI provided in environment variables.');
-    console.log('🚀 Running backend in Intelligent In-Memory Storage Mode (Fallback Mode active).');
-    isFallbackMode = true;
-    return false;
-  }
+  const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/nexusmart';
 
   try {
     const conn = await mongoose.connect(mongoURI, {
@@ -88,4 +82,4 @@ const getStatus = () => ({
   isFallbackMode,
 });
 
-module.exports = { connectDB, getStatus };
+module.exports = { connectDB, getStatus, seedInitialDataIfEmpty };
