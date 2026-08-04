@@ -1,7 +1,7 @@
 /**
  * Modular AI Engine Service
  * Interprets user intent, natural language queries, product specs, orders & policy data
- * Produces contextual text & executable UI action commands for the frontend Floating AI assistant.
+ * Dynamically indexes real-time product catalog & produces accurate responses & UI commands.
  */
 
 const parseAIIntent = async ({ message, context, products = [], orders = [] }) => {
@@ -14,78 +14,110 @@ const parseAIIntent = async ({ message, context, products = [], orders = [] }) =
     msgLower === 'hey' ||
     msgLower.startsWith('good morning') ||
     msgLower.startsWith('good afternoon') ||
-    msgLower.includes('who are you')
+    msgLower.includes('who are you') ||
+    msgLower.includes('what can you do')
   ) {
     return {
-      text: `Hello! 👋 I'm your NexusMart AI Shopping Assistant. I can help you find products, compare specs, track orders, apply discount coupons, and answer any store policy questions. What can I assist you with today?`,
+      text: `Hello! 👋 I'm your NexusMart AI Shopping Assistant. I'm connected directly to our real-time product inventory. I can help you find specific items, compare prices & specs, track orders, apply discount coupons, or answer store policy questions. What are you looking for today?`,
       action: { type: 'GREETING', payload: {} },
     };
   }
 
-  // 2. Specific Product Inquiry (Price, Specs, Stock, Recommendations)
-  const matchingProduct = products.find((p) =>
-    msgLower.includes(p.name.toLowerCase()) ||
-    p.name.toLowerCase().split(' ').some((word) => word.length > 3 && msgLower.includes(word)) ||
-    msgLower.includes(p.brand.toLowerCase())
-  );
-
-  if (matchingProduct && (msgLower.includes('price') || msgLower.includes('cost') || msgLower.includes('how much') || msgLower.includes('spec') || msgLower.includes('stock') || msgLower.includes('rating'))) {
+  // 2. Query for "Show all products" or "List products"
+  if (
+    msgLower.includes('all product') ||
+    msgLower.includes('list product') ||
+    msgLower.includes('what products') ||
+    msgLower.includes('catalog') ||
+    msgLower === 'products'
+  ) {
+    const topProducts = products.slice(0, 6);
     return {
-      text: `🏷️ **${matchingProduct.name}**\n\n- **Price**: ₹${matchingProduct.price.toLocaleString()}\n- **Rating**: ⭐ ${matchingProduct.rating || 4.8} / 5.0\n- **Stock Availability**: ${matchingProduct.countInStock > 0 ? `${matchingProduct.countInStock} items available in stock` : 'In Stock'}\n- **Brand**: ${matchingProduct.brand}\n- **Category**: ${matchingProduct.category}\n- **Highlights**: ${matchingProduct.description || 'High-performance premium product with manufacturer warranty.'}\n\nWould you like me to add **${matchingProduct.name}** to your cart or compare it with other items?`,
+      text: `We currently have **${products.length} products** in store! Here are some of our top items:`,
       action: {
-        type: 'PRODUCT_INFO',
-        payload: { product: matchingProduct },
+        type: 'SEARCH_PRODUCTS',
+        payload: { query: message, matchedProducts: topProducts },
       },
-      products: [matchingProduct],
+      products: topProducts,
     };
   }
 
-  // 3. Product Search & Budget Intent
-  if (
-    msgLower.includes('laptop') ||
-    msgLower.includes('phone') ||
-    msgLower.includes('headphone') ||
-    msgLower.includes('watch') ||
-    msgLower.includes('shoe') ||
-    msgLower.includes('camera') ||
-    msgLower.includes('tv') ||
-    msgLower.includes('under') ||
-    msgLower.includes('show') ||
-    msgLower.includes('find') ||
-    msgLower.includes('search') ||
-    msgLower.includes('recommend') ||
-    msgLower.includes('best')
-  ) {
-    const priceMatch = msgLower.match(/(\d+[\d,]*)/);
-    let maxPrice = null;
-    if (priceMatch) {
-      maxPrice = parseInt(priceMatch[0].replace(/,/g, ''), 10);
-    }
+  // 3. Specific Product Search & Matching Engine
+  const words = msgLower.split(/\s+/).filter((w) => w.length > 2);
+  let scoredProducts = products.map((p) => {
+    let score = 0;
+    const pName = (p.name || '').toLowerCase();
+    const pBrand = (p.brand || '').toLowerCase();
+    const pCat = (p.category || '').toLowerCase();
+    const pDesc = (p.description || '').toLowerCase();
+    const pTags = Array.isArray(p.tags) ? p.tags.join(' ').toLowerCase() : '';
 
-    let matched = products.filter((p) => {
-      let matchesQuery =
-        msgLower.includes(p.category.toLowerCase()) ||
-        p.name.toLowerCase().split(' ').some((word) => msgLower.includes(word)) ||
-        msgLower.includes(p.brand.toLowerCase());
-      if (maxPrice) {
-        return matchesQuery && p.price <= maxPrice;
-      }
-      return matchesQuery;
+    // Direct match bonuses
+    if (msgLower.includes(pName)) score += 100;
+    if (msgLower.includes(pBrand) && pBrand.length > 2) score += 40;
+    if (msgLower.includes(pCat) && pCat.length > 2) score += 30;
+
+    // Word-by-word token scoring
+    words.forEach((w) => {
+      if (pName.includes(w)) score += 15;
+      if (pBrand.includes(w)) score += 10;
+      if (pCat.includes(w)) score += 10;
+      if (pDesc.includes(w)) score += 5;
+      if (pTags.includes(w)) score += 8;
     });
 
-    if (matched.length === 0) {
-      matched = products.slice(0, 4);
+    return { product: p, score };
+  }).filter((item) => item.score > 0);
+
+  scoredProducts.sort((a, b) => b.score - a.score);
+
+  // Price budget extraction (e.g. "under 50000" or "below 30000")
+  const priceMatch = msgLower.match(/(?:under|below|less than|max|budget)\s*₹?\s*(\d+[\d,]*)/i) || msgLower.match(/₹?\s*(\d+[\d,]*)/);
+  let maxPrice = null;
+  if (priceMatch && priceMatch[1]) {
+    const parsedPrice = parseInt(priceMatch[1].replace(/,/g, ''), 10);
+    if (!isNaN(parsedPrice) && parsedPrice > 100) {
+      maxPrice = parsedPrice;
     }
+  }
+
+  // Filter scored items by maxPrice if specified
+  if (maxPrice) {
+    scoredProducts = scoredProducts.filter((item) => item.product.price <= maxPrice);
+  }
+
+  // Exact Single Product Detail Intent (Asking for price, specs, stock of a specific product)
+  if (scoredProducts.length > 0 && (msgLower.includes('price') || msgLower.includes('cost') || msgLower.includes('how much') || msgLower.includes('spec') || msgLower.includes('stock') || msgLower.includes('detail') || msgLower.includes('rating'))) {
+    const topMatch = scoredProducts[0].product;
+    const stockCount = topMatch.stock !== undefined ? topMatch.stock : (topMatch.countInStock || 0);
+    const stockStatus = stockCount <= 0
+      ? '🔴 Out of Stock'
+      : stockCount <= 5
+      ? `⚠️ Only ${stockCount} left in stock!`
+      : `✅ In Stock (${stockCount} items available)`;
 
     return {
+      text: `🏷️ **${topMatch.name}**\n\n- **Price**: ₹${topMatch.price.toLocaleString()}\n- **Rating**: ⭐ ${topMatch.rating || 4.8} / 5.0 (${topMatch.numReviews || 24} reviews)\n- **Stock Availability**: ${stockStatus}\n- **Brand**: ${topMatch.brand || 'Generic'}\n- **Category**: ${topMatch.category}\n- **Highlights**: ${topMatch.description || 'High-performance premium product.'}\n\nWould you like me to add **${topMatch.name}** to your cart or compare it with other items?`,
+      action: {
+        type: 'PRODUCT_INFO',
+        payload: { product: topMatch },
+      },
+      products: [topMatch],
+    };
+  }
+
+  // General Matching Products Search Intent
+  if (scoredProducts.length > 0) {
+    const matchedList = scoredProducts.slice(0, 5).map((item) => item.product);
+    return {
       text: maxPrice
-        ? `Here are top recommendations matching your budget of ₹${maxPrice.toLocaleString()}:`
-        : `Here are matching products from our catalog:`,
+        ? `Here are top recommendations matching your query under ₹${maxPrice.toLocaleString()}:`
+        : `Here are the best matching products from our real-time catalog:`,
       action: {
         type: 'SEARCH_PRODUCTS',
-        payload: { query: message, maxPrice, matchedProducts: matched },
+        payload: { query: message, maxPrice, matchedProducts: matchedList },
       },
-      products: matched,
+      products: matchedList,
     };
   }
 
@@ -112,7 +144,7 @@ const parseAIIntent = async ({ message, context, products = [], orders = [] }) =
     msgLower.includes('buy first') ||
     msgLower.includes('add first')
   ) {
-    const targetProduct = matchingProduct || products[0] || null;
+    const targetProduct = scoredProducts[0]?.product || products[0] || null;
     return {
       text: targetProduct
         ? `I have added **${targetProduct.name}** (₹${targetProduct.price.toLocaleString()}) directly to your shopping cart!`
@@ -211,9 +243,9 @@ const parseAIIntent = async ({ message, context, products = [], orders = [] }) =
     };
   }
 
-  // Default Smart Assistant Fallback Response
+  // Default Smart Assistant Fallback Response with current store summary
   return {
-    text: `I'm here to help! You can ask me to:\n- 🔍 Find products under a specific budget (e.g. *"Show gaming laptops under ₹70,000"*)\n- ⚖️ Compare products side-by-side\n- 📦 Track order status & courier details\n- 🏷️ Apply promo coupons (e.g. *"Apply SAVE10"*)\n- 💳 Learn about payment methods, returns, or warranty.`,
+    text: `I'm connected to our store catalog of **${products.length} products**! You can ask me:\n- 🔍 Find specific products or budget items (e.g. *"Show laptops under ₹70,000"*)\n- 🏷️ Ask about a product's price, stock, or specifications\n- ⚖️ Compare products side-by-side\n- 📦 Track order status & courier details\n- 💳 Ask about payment methods, returns, or coupons.`,
     action: { type: 'GENERAL_ASSISTANCE', payload: {} },
   };
 };

@@ -1,4 +1,5 @@
 const { parseAIIntent } = require('../services/aiService');
+const Product = require('../models/Product');
 const { sampleProducts } = require('../utils/seedData');
 
 const processAIQuery = async (req, res) => {
@@ -9,7 +10,26 @@ const processAIQuery = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Message is required' });
     }
 
-    const availableProducts = products && products.length > 0 ? products : sampleProducts;
+    // Always fetch latest products from MongoDB database to reflect real-time catalog changes & admin updates
+    let availableProducts = [];
+    try {
+      const dbProducts = await Product.find().sort({ createdAt: -1 });
+      if (dbProducts && dbProducts.length > 0) {
+        availableProducts = dbProducts.map((p) => p.toObject());
+      }
+    } catch (err) {
+      console.warn('Database query fallback in AI controller:', err.message);
+    }
+
+    // Combine request products, database products, and sample products
+    if (availableProducts.length === 0) {
+      if (products && products.length > 0) {
+        availableProducts = products;
+      } else {
+        availableProducts = sampleProducts;
+      }
+    }
+
     const availableOrders = orders || [];
 
     const aiResult = await parseAIIntent({

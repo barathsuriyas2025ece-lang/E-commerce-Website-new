@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { aiAPI } from '../services/api';
 import { useCart } from './CartContext';
 import { useWishlist } from './WishlistContext';
+import { useProducts } from './ProductContext';
 
 const AIContext = createContext();
 
@@ -22,6 +23,7 @@ export const AIProvider = ({ children }) => {
 
   const { addToCart, setAppliedCoupon } = useCart();
   const { toggleWishlist } = useWishlist();
+  const { products: storeProducts } = useProducts();
   const navigate = useNavigate();
 
   const sendMessage = async (userText, productsCatalog = [], userOrders = []) => {
@@ -37,11 +39,13 @@ export const AIProvider = ({ children }) => {
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
+    const activeCatalog = (productsCatalog && productsCatalog.length > 0) ? productsCatalog : (storeProducts || []);
+
     try {
       const res = await aiAPI.query({
         message: userText,
         context: { currentPage: window.location.pathname },
-        products: productsCatalog,
+        products: activeCatalog,
         orders: userOrders,
       });
 
