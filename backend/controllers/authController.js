@@ -73,12 +73,6 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Password must be at least 5 characters long' });
     }
 
-    // Check if user already registered in memory or DB
-    const isExistingMemory = memoryUsers.some((u) => u.email === cleanEmail);
-    if (isExistingMemory) {
-      return res.status(400).json({ success: false, message: 'An account with this email address already exists. Please sign in.' });
-    }
-
     try {
       const existingUser = await User.findOne({ email: cleanEmail });
       if (existingUser) {
@@ -115,6 +109,7 @@ const registerUser = async (req, res) => {
         user: { id: user._id, name: user.name, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints },
       });
     } catch (dbErr) {
+      console.error('MongoDB User registration warning:', dbErr.message);
       // In-Memory Registration with Bcrypt Hashing
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
