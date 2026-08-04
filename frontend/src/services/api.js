@@ -5,7 +5,7 @@ const getApiBase = () => {
   if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
     return 'http://localhost:5000/api';
   }
-  return 'https://e-commerce-website-oxb0.onrender.com/api';
+  return 'https://e-commerce-website-new-13fa.onrender.com/api';
 };
 
 const API_BASE = getApiBase();
