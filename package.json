@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "build": "cd frontend && npm install && npm run build && node -e \"require('fs').cpSync('dist', '../dist', {recursive: true})\"",
-    "start": "cd backend && npm start"
+    "start": "cd backend && npm start",
+    "backend": "cd backend && npm start",
+    "frontend": "cd frontend && npm run dev"
   }
 }
