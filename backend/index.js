@@ -102,12 +102,8 @@ app.use(errorHandler);
 
 // Start Server
 const PORT = process.env.PORT || 5000;
-const startServer = async () => {
-  await connectDB();
-  app.listen(PORT, () => {
-    console.log(`🚀 Security Hardened Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-    verifyTransporter();
-  });
-};
-
-startServer();
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Security Hardened Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  connectDB();
+  verifyTransporter();
+});
