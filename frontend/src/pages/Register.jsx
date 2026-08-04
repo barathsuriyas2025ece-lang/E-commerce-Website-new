@@ -55,6 +55,33 @@ const Register = () => {
   const { register, socialLogin, loading } = useAuth();
   const navigate = useNavigate();
 
+  const getDynamicOAuthAccounts = () => {
+    const domain = activeOAuthModal === 'github' ? 'github.com' : 'gmail.com';
+    const accounts = [];
+
+    const cleanInputEmail = email ? email.trim().toLowerCase() : '';
+    const cleanInputName = name ? name.trim() : '';
+
+    if (cleanInputEmail && validateEmail(cleanInputEmail)) {
+      const displayName = cleanInputName || cleanInputEmail.split('@')[0];
+      const avatar = displayName.slice(0, 2).toUpperCase();
+      accounts.push({
+        name: `${displayName} (Entered Email)`,
+        email: cleanInputEmail,
+        avatar: avatar,
+        isEntered: true,
+      });
+    }
+
+    accounts.push(
+      { name: 'Testing User', email: `test.user@${domain}`, avatar: 'TU' },
+      { name: 'Demo Customer', email: `demo.customer@${domain}`, avatar: 'DC' },
+      { name: 'Barath Suriya', email: 'barathsuriya.12345@gmail.com', avatar: 'BS' }
+    );
+
+    return accounts;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -90,7 +117,15 @@ const Register = () => {
 
   const handleOAuthAccountSelect = async (chosenEmail) => {
     const provider = activeOAuthModal || 'google';
-    const targetEmail = chosenEmail || selectedCustomEmail || 'barathsuriya.12345@gmail.com';
+    const domain = provider === 'github' ? 'github.com' : 'gmail.com';
+    const fallbackEmail = email && validateEmail(email.trim()) ? email.trim().toLowerCase() : `test.user@${domain}`;
+    const targetEmail = (chosenEmail || selectedCustomEmail || fallbackEmail).trim();
+
+    if (!validateEmail(targetEmail)) {
+      setError('Please enter or select a valid email address.');
+      return;
+    }
+
     setActiveOAuthModal(null);
     setError('');
 
@@ -247,22 +282,28 @@ const Register = () => {
 
             {/* Account Options List */}
             <div className="space-y-2.5">
-              {sampleGoogleAccounts.map((acc, idx) => (
+              {getDynamicOAuthAccounts().map((acc, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleOAuthAccountSelect(acc.email)}
-                  className="w-full p-3 rounded-2xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 flex items-center justify-between text-left transition group cursor-pointer"
+                  className={`w-full p-3 rounded-2xl border ${
+                    acc.isEntered
+                      ? 'border-indigo-500 bg-indigo-50/70 font-semibold'
+                      : 'border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50'
+                  } flex items-center justify-between text-left transition group cursor-pointer`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
                       {acc.avatar}
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-slate-900 group-hover:text-indigo-600">{acc.name}</div>
+                      <div className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 flex items-center gap-1.5">
+                        <span>{acc.name}</span>
+                      </div>
                       <div className="text-[11px] text-slate-500 font-mono">{acc.email}</div>
                     </div>
                   </div>
-                  <UserCheck className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 shrink-0" />
+                  <UserCheck className="w-4 h-4 text-indigo-600 shrink-0" />
                 </button>
               ))}
             </div>
@@ -277,13 +318,13 @@ const Register = () => {
                   type="email"
                   value={selectedCustomEmail}
                   onChange={(e) => setSelectedCustomEmail(e.target.value)}
-                  placeholder="barathsuriya.12345@gmail.com"
+                  placeholder={email && validateEmail(email.trim()) ? email.trim() : `user@${activeOAuthModal === 'github' ? 'github.com' : 'gmail.com'}`}
                   className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
                 />
                 <button
                   type="button"
                   onClick={() => handleOAuthAccountSelect(selectedCustomEmail)}
-                  className="btn-primary py-2 px-3 text-xs font-bold shrink-0"
+                  className="btn-primary py-2 px-3 text-xs font-bold shrink-0 cursor-pointer"
                 >
                   <span>Sign In</span>
                   <ArrowRight className="w-3.5 h-3.5" />

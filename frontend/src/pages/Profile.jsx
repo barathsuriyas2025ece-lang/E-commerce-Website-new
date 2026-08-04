@@ -6,8 +6,8 @@ const Profile = () => {
   const { user, setUser } = useAuth();
 
   const currentUser = user || {
-    name: 'Barath Suriya',
-    email: 'barathsuriya.12345@gmail.com',
+    name: 'Customer User',
+    email: 'customer@nexusmart.com',
     phone: '+91 9876543210',
     address: '101 Innovation Way, Bengaluru, India',
     role: 'customer',
