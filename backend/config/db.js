@@ -118,9 +118,33 @@ const connectDB = async () => {
   }
 };
 
-const getStatus = () => ({
-  isConnected,
-  isFallbackMode,
+// Auto-reconnection & Mongoose Event Listeners
+mongoose.connection.on('connected', () => {
+  isConnected = true;
+  isFallbackMode = false;
+  console.log('✅ Mongoose connected to MongoDB database');
 });
 
-module.exports = { connectDB, getStatus, seedInitialDataIfEmpty };
+mongoose.connection.on('disconnected', () => {
+  isConnected = false;
+  console.warn('⚠️ Mongoose connection to MongoDB lost. Auto-reconnecting...');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ Mongoose connection error:', err.message);
+});
+
+const ensureConnectedDB = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return true;
+  }
+  return await connectDB();
+};
+
+const getStatus = () => ({
+  isConnected: mongoose.connection.readyState === 1,
+  isFallbackMode,
+  readyState: mongoose.connection.readyState,
+});
+
+module.exports = { connectDB, ensureConnectedDB, getStatus, seedInitialDataIfEmpty };

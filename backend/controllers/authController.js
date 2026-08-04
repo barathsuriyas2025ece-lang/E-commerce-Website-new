@@ -55,6 +55,8 @@ const triggerAsyncLoginEmail = (name, email, req) => {
   });
 };
 
+const { ensureConnectedDB } = require('../config/db');
+
 const registerUser = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -73,6 +75,9 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Password must be at least 5 characters long' });
     }
 
+    // Ensure MongoDB connection is active
+    await ensureConnectedDB();
+
     try {
       const existingUser = await User.findOne({ email: cleanEmail });
       if (existingUser) {
@@ -89,8 +94,8 @@ const registerUser = async (req, res) => {
         role: role === 'admin' && cleanEmail === ADMIN_EMAIL ? 'admin' : 'customer',
       });
 
-      // Track registered user in memory array with hashedPassword
-      memoryUsers.push({
+      // Mirror registered user in memory array for speed
+      const memUser = {
         _id: user._id.toString(),
         name: user.name,
         email: user.email,
@@ -98,7 +103,8 @@ const registerUser = async (req, res) => {
         role: user.role,
         loyaltyPoints: user.loyaltyPoints || 100,
         createdAt: user.createdAt || new Date(),
-      });
+      };
+      memoryUsers.push(memUser);
 
       const token = generateToken(user);
       triggerAsyncWelcomeEmail(cleanName, cleanEmail);
@@ -106,11 +112,12 @@ const registerUser = async (req, res) => {
       return res.status(201).json({
         success: true,
         token,
-        user: { id: user._id, name: user.name, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints },
+        user: { id: user._id, _id: user._id, name: user.name, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints },
       });
     } catch (dbErr) {
-      console.error('MongoDB User registration warning:', dbErr.message);
-      // In-Memory Registration with Bcrypt Hashing
+      console.error('[DATABASE REGISTER ERROR]', dbErr.message);
+
+      // Fallback in-memory registration if DB is completely unreachable
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -132,7 +139,7 @@ const registerUser = async (req, res) => {
       return res.status(201).json({
         success: true,
         token,
-        user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, loyaltyPoints: newUser.loyaltyPoints },
+        user: { id: newUser._id, _id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, loyaltyPoints: newUser.loyaltyPoints },
       });
     }
   } catch (error) {
@@ -153,7 +160,10 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please enter a valid email address format' });
     }
 
-    // 1. Try Database lookup
+    // Ensure MongoDB connection is active
+    await ensureConnectedDB();
+
+    // 1. Try Database lookup first
     try {
       const dbUser = await User.findOne({ email: cleanEmail });
       if (dbUser) {
@@ -165,13 +175,27 @@ const loginUser = async (req, res) => {
           return res.json({
             success: true,
             token,
-            user: { id: dbUser._id, name: dbUser.name, email: dbUser.email, role: dbUser.role, loyaltyPoints: dbUser.loyaltyPoints },
+            user: {
+              id: dbUser._id,
+              _id: dbUser._id,
+              name: dbUser.name,
+              email: dbUser.email,
+              role: dbUser.role,
+              loyaltyPoints: dbUser.loyaltyPoints || 100,
+              isVipSubscriber: Boolean(dbUser.isVipSubscriber),
+              vipPlan: dbUser.vipPlan || '',
+              vipExpiry: dbUser.vipExpiry || '',
+              phone: dbUser.phone || '',
+              address: dbUser.address || '',
+            },
           });
         } else {
           return res.status(400).json({ success: false, message: 'Invalid password. Please check your password and try again.' });
         }
       }
-    } catch (dbErr) {}
+    } catch (dbErr) {
+      console.error('[DATABASE LOGIN ERROR]', dbErr.message);
+    }
 
     // 2. Try Memory lookup for registered users
     const memoryMatch = memoryUsers.find((u) => u.email === cleanEmail);
@@ -190,7 +214,19 @@ const loginUser = async (req, res) => {
         return res.json({
           success: true,
           token,
-          user: { id: memoryMatch._id, name: memoryMatch.name, email: memoryMatch.email, role: memoryMatch.role, loyaltyPoints: memoryMatch.loyaltyPoints || 100 },
+          user: {
+            id: memoryMatch._id,
+            _id: memoryMatch._id,
+            name: memoryMatch.name,
+            email: memoryMatch.email,
+            role: memoryMatch.role,
+            loyaltyPoints: memoryMatch.loyaltyPoints || 100,
+            isVipSubscriber: Boolean(memoryMatch.isVipSubscriber),
+            vipPlan: memoryMatch.vipPlan || '',
+            vipExpiry: memoryMatch.vipExpiry || '',
+            phone: memoryMatch.phone || '',
+            address: memoryMatch.address || '',
+          },
         });
       } else {
         return res.status(400).json({ success: false, message: 'Invalid password. Please check your password and try again.' });
