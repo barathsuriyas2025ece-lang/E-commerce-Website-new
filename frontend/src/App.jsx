@@ -25,6 +25,11 @@ import Wishlist from './pages/Wishlist';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import About from './pages/About';
+import Careers from './pages/Careers';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import DownloadApp from './pages/DownloadApp';
 
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminProducts from './pages/admin/Products';
@@ -114,6 +119,21 @@ function App() {
                             <Route path="/profile" element={<Profile />} />
                             <Route path="/login" element={<Login />} />
                             <Route path="/register" element={<Register />} />
+                            <Route path="/about" element={<About />} />
+                            <Route path="/careers" element={<Careers />} />
+                            <Route path="/privacy" element={<Privacy />} />
+                            <Route path="/terms" element={<Terms />} />
+                            <Route path="/download-app" element={<DownloadApp />} />
+
+                            {/* Admin Routes */}
+                            <Route path="/admin/login" element={<AdminLogin />} />
+                            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                            <Route path="/admin/products" element={<AdminProducts />} />
+                            <Route path="/admin/orders" element={<AdminOrders />} />
+                            <Route path="/admin/users" element={<AdminUsers />} />
+                            <Route path="/admin/coupons" element={<AdminCoupons />} />
+                          </Routes>
+                        </main>
 
                             {/* Admin Routes */}
                             <Route path="/admin/login" element={<AdminLogin />} />
