@@ -402,21 +402,22 @@ export const adminAPI = {
         data: {
           success: true,
           stats: {
-            totalRevenue: 284950,
-            totalOrders: 42,
-            totalProducts: 18,
-            totalCustomers: 156,
-            lowStockAlerts: 3,
-            salesData: [
-              { month: 'Jan', revenue: 35000 },
-              { month: 'Feb', revenue: 48000 },
-              { month: 'Mar', revenue: 62000 },
-              { month: 'Apr', revenue: 54000 },
-              { month: 'May', revenue: 85950 },
-            ],
+            totalRevenue: 0,
+            totalOrders: 0,
+            totalProducts: 0,
+            totalCustomers: 0,
+            lowStockAlerts: 0,
+            salesData: [],
           },
         },
       };
+    }
+  },
+  getUsers: async () => {
+    try {
+      return await api.get('/admin/users');
+    } catch (err) {
+      return { data: { success: true, users: [] } };
     }
   },
 };
