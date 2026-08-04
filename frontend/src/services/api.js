@@ -67,6 +67,28 @@ export const authAPI = {
   },
 
   getMe: () => api.get('/auth/me'),
+
+  updateProfile: async (data) => {
+    try {
+      return await api.put('/auth/profile', data);
+    } catch (err) {
+      if (err.response && err.response.data) {
+        return err.response;
+      }
+      throw new Error(err?.response?.data?.message || err.message || 'Unable to update profile');
+    }
+  },
+
+  updateVip: async (data) => {
+    try {
+      return await api.put('/auth/vip', data);
+    } catch (err) {
+      if (err.response && err.response.data) {
+        return err.response;
+      }
+      throw new Error(err?.response?.data?.message || err.message || 'Unable to activate VIP subscription');
+    }
+  },
 };
 
 export const fallbackSampleProducts = [

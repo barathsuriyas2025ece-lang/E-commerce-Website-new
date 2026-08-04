@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Review = require('../models/Review');
 const Order = require('../models/Order');
@@ -211,14 +212,19 @@ const updateProduct = async (req, res) => {
     const updateData = { ...req.body };
     delete updateData._id;
 
-    try {
-      let updated = await Product.findByIdAndUpdate(id, updateData, { new: true });
-      if (!updated) {
-        updated = await Product.findOneAndUpdate({ _id: id }, updateData, { new: true, upsert: true });
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      try {
+        const updateOptions = { new: true, runValidators: true };
+        const updated = await Product.findByIdAndUpdate(id, updateData, updateOptions);
+        if (updated) return res.json({ success: true, product: updated });
+      } catch (err) {
+        console.error('[ENDPOINT ERROR]', {
+          endpoint: req.originalUrl,
+          user: req.user?.id,
+          error: err.message,
+          stack: err.stack,
+        });
       }
-      if (updated) return res.json({ success: true, product: updated });
-    } catch (err) {
-      console.error('MongoDB updateProduct warning:', err.message);
     }
 
     const index = memoryProducts.findIndex((p) => (p._id || p.id || '').toString() === id.toString());
@@ -229,6 +235,12 @@ const updateProduct = async (req, res) => {
 
     res.status(404).json({ success: false, message: 'Product not found' });
   } catch (error) {
+    console.error('[ENDPOINT ERROR]', {
+      endpoint: req.originalUrl,
+      user: req.user?.id,
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -236,15 +248,28 @@ const updateProduct = async (req, res) => {
 const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    try {
-      await Product.findByIdAndDelete(id);
-    } catch (err) {
-      console.error('MongoDB deleteProduct warning:', err.message);
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      try {
+        await Product.findByIdAndDelete(id);
+      } catch (err) {
+        console.error('[ENDPOINT ERROR]', {
+          endpoint: req.originalUrl,
+          user: req.user?.id,
+          error: err.message,
+          stack: err.stack,
+        });
+      }
     }
 
     memoryProducts = memoryProducts.filter((p) => (p._id || p.id || '').toString() !== id.toString());
     res.json({ success: true, message: 'Product removed successfully' });
   } catch (error) {
+    console.error('[ENDPOINT ERROR]', {
+      endpoint: req.originalUrl,
+      user: req.user?.id,
+      error: error.message,
+      stack: error.stack,
+    });
     res.status(500).json({ success: false, message: error.message });
   }
 };

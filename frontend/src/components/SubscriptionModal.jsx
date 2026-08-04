@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Sparkles, CheckCircle2, ShieldCheck, X, CreditCard, Smartphone, Building2, Crown, Lock, ArrowRight, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { authAPI } from '../services/api';
 
 const plans = [
   {
@@ -61,7 +62,7 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
     setStep('payment');
   };
 
-  const handlePayAndSubscribe = (e) => {
+  const handlePayAndSubscribe = async (e) => {
     e.preventDefault();
     setPaymentError('');
 
@@ -77,33 +78,48 @@ const SubscriptionModal = ({ isOpen, onClose }) => {
 
     setIsProcessing(true);
 
-    setTimeout(() => {
-      setIsProcessing(false);
-      setStep('success');
-
-      // Update user state with VIP status
-      const updatedUser = {
-        ...(user || { name: userEmail.split('@')[0], email: userEmail, role: 'customer' }),
-        isVipSubscriber: true,
+    try {
+      const res = await authAPI.updateVip({
         vipPlan: selectedPlan.name,
-        vipExpiry: new Date(Date.now() + (selectedPlan.id === 'annual' ? 365 : selectedPlan.id === 'quarterly' ? 90 : 30) * 24 * 60 * 60 * 1000).toLocaleDateString(),
-      };
+        durationDays: selectedPlan.id === 'annual' ? 365 : selectedPlan.id === 'quarterly' ? 90 : 30,
+      });
 
-      if (setUser) {
-        setUser(updatedUser);
-      }
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      localStorage.setItem('vip_subscription', JSON.stringify({
-        plan: selectedPlan.name,
-        amount: selectedPlan.price,
-        subscribedAt: new Date().toISOString(),
-        paymentMethod: paymentMethod.toUpperCase(),
-      }));
+      if (res.data && res.data.success) {
+        const updatedUser = res.data.user;
+        const newToken = res.data.token;
 
-      if (setNotification) {
-        setNotification(`🎉 Payment of ₹${selectedPlan.price} successful! VIP Subscription active.`);
+        if (setUser) {
+          setUser(updatedUser);
+        }
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        if (newToken) {
+          localStorage.setItem('token', newToken);
+        }
+
+        localStorage.setItem(
+          'vip_subscription',
+          JSON.stringify({
+            plan: selectedPlan.name,
+            amount: selectedPlan.price,
+            subscribedAt: new Date().toISOString(),
+            paymentMethod: paymentMethod.toUpperCase(),
+          })
+        );
+
+        setIsProcessing(false);
+        setStep('success');
+
+        if (setNotification) {
+          setNotification(`🎉 Payment of ₹${selectedPlan.price} successful! VIP Subscription active in MongoDB.`);
+        }
+      } else {
+        setIsProcessing(false);
+        setPaymentError(res.data?.message || 'Payment processor could not complete VIP activation in MongoDB.');
       }
-    }, 1500);
+    } catch (err) {
+      setIsProcessing(false);
+      setPaymentError(err.response?.data?.message || err.message || 'VIP Subscription error.');
+    }
   };
 
   const handleResetAndClose = () => {

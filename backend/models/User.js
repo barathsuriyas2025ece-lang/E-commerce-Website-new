@@ -7,15 +7,12 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true },
     role: { type: String, enum: ['customer', 'admin'], default: 'customer' },
     phone: { type: String, default: '' },
-    address: {
-      street: { type: String, default: '' },
-      city: { type: String, default: '' },
-      state: { type: String, default: '' },
-      zipCode: { type: String, default: '' },
-      country: { type: String, default: 'India' },
-    },
+    address: { type: String, default: '' },
     loyaltyPoints: { type: Number, default: 100 },
     avatar: { type: String, default: '' },
+    isVipSubscriber: { type: Boolean, default: false },
+    vipPlan: { type: String, default: '' },
+    vipExpiry: { type: String, default: '' },
   },
   { timestamps: true }
 );

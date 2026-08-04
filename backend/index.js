@@ -12,9 +12,6 @@ const { verifyTransporter } = require('./notifications/emailService');
 // Initialize Express App
 const app = express();
 
-// Connect Database with Fallback Graceful Mode
-connectDB();
-
 // 🛡️ Enterprise Security Header Configuration (HSTS, Clickjacking, MIME Sniffing, Frameguard)
 app.use(
   helmet({
@@ -105,7 +102,12 @@ app.use(errorHandler);
 
 // Start Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Security Hardened Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-  verifyTransporter();
-});
+const startServer = async () => {
+  await connectDB();
+  app.listen(PORT, () => {
+    console.log(`🚀 Security Hardened Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+    verifyTransporter();
+  });
+};
+
+startServer();

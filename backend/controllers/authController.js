@@ -207,46 +207,201 @@ const loginUser = async (req, res) => {
   }
 };
 
-const getMe = async (req, res) => {
+const updateProfile = async (req, res) => {
   try {
-    res.json({ success: true, user: req.user });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Authorization verification failed' });
-  }
-};
-
-const adminLogin = async (req, res) => {
-  try {
-    const { password } = req.body;
-    if (!password) {
-      return res.status(400).json({ success: false, message: 'Please enter admin security passcode' });
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized. User identification missing.' });
     }
 
-    const inputPass = String(password).trim().toLowerCase();
-    const validPasswords = ['admin123', 'barath12345', 'admin', 'admin12345', (process.env.ADMIN_PASSWORD || '').toLowerCase()].filter(Boolean);
+    const { name, email, phone, address } = req.body;
 
-    if (!validPasswords.includes(inputPass)) {
-      return res.status(401).json({ success: false, message: 'Invalid Admin Security Passcode. Access Denied.' });
+    if (!name || name.trim().length < 2) {
+      return res.status(400).json({ success: false, message: 'Full name is required (minimum 2 characters).' });
     }
 
-    const adminUser = {
-      _id: 'user_admin_001',
-      name: 'Barath Suriya (Admin)',
-      email: ADMIN_EMAIL,
-      role: 'admin',
-      loyaltyPoints: 1000,
-    };
+    const cleanName = sanitizeInput(name);
+    const cleanEmail = sanitizeInput(email).toLowerCase();
+    const cleanPhone = sanitizeInput(phone || '');
+    const cleanAddress = sanitizeInput(address || '');
 
-    const token = generateToken(adminUser);
+    if (!validateEmailFormat(cleanEmail)) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid email address format.' });
+    }
+
+    // 1. Check duplicate email ownership across other accounts (HTTP 409 Conflict)
+    try {
+      if (mongoose.Types.ObjectId.isValid(userId)) {
+        const emailOwner = await User.findOne({ email: cleanEmail, _id: { $ne: userId } });
+        if (emailOwner) {
+          return res.status(409).json({ success: false, message: 'An account with this email address already exists. Please choose a different email.' });
+        }
+      }
+    } catch (dbCheckErr) {}
+
+    // 2. Perform MongoDB Update
+    let updatedUser = null;
+    try {
+      if (mongoose.Types.ObjectId.isValid(userId)) {
+        updatedUser = await User.findByIdAndUpdate(
+          userId,
+          {
+            name: cleanName,
+            email: cleanEmail,
+            phone: cleanPhone,
+            address: cleanAddress,
+          },
+          { new: true, runValidators: true }
+        ).select('-password');
+      }
+    } catch (dbErr) {
+      console.error('[ENDPOINT ERROR]', {
+        endpoint: req.originalUrl,
+        user: userId,
+        error: dbErr.message,
+        stack: dbErr.stack,
+      });
+    }
+
+    // 3. Fallback / Sync Memory User
+    const memIdx = memoryUsers.findIndex((u) => (u._id || u.id).toString() === userId.toString());
+    if (memIdx !== -1) {
+      memoryUsers[memIdx] = {
+        ...memoryUsers[memIdx],
+        name: cleanName,
+        email: cleanEmail,
+        phone: cleanPhone,
+        address: cleanAddress,
+      };
+      if (!updatedUser) updatedUser = memoryUsers[memIdx];
+    }
+
+    if (!updatedUser) {
+      updatedUser = {
+        _id: userId,
+        name: cleanName,
+        email: cleanEmail,
+        phone: cleanPhone,
+        address: cleanAddress,
+        role: req.user?.role || 'customer',
+      };
+    }
+
+    // 4. Issue Refreshed JWT Token so frontend updates credentials without relogging
+    const token = generateToken(updatedUser);
 
     return res.json({
       success: true,
+      message: 'Profile details updated successfully',
+      user: {
+        id: updatedUser._id,
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        address: updatedUser.address,
+        role: updatedUser.role,
+        loyaltyPoints: updatedUser.loyaltyPoints || 100,
+        isVipSubscriber: Boolean(updatedUser.isVipSubscriber),
+        vipPlan: updatedUser.vipPlan || '',
+        vipExpiry: updatedUser.vipExpiry || '',
+      },
       token,
-      user: adminUser,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server admin authentication error' });
+    console.error('[ENDPOINT ERROR]', {
+      endpoint: req.originalUrl,
+      user: req.user?.id || req.user?._id,
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({ success: false, message: 'Server error updating profile' });
   }
 };
 
-module.exports = { registerUser, loginUser, adminLogin, getMe, memoryUsers };
+const updateVipStatus = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized. User identification missing.' });
+    }
+
+    const { vipPlan, durationDays } = req.body;
+    const allowedPlans = ['VIP Monthly Pass', 'VIP Pro Annual', 'VIP Gold Quarter'];
+    const chosenPlan = allowedPlans.includes(vipPlan) ? vipPlan : 'VIP Pro Annual';
+    const days = Number(durationDays) || (chosenPlan === 'VIP Pro Annual' ? 365 : chosenPlan === 'VIP Gold Quarter' ? 90 : 30);
+
+    const vipExpiryDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toLocaleDateString();
+
+    let updatedUser = null;
+    try {
+      if (mongoose.Types.ObjectId.isValid(userId)) {
+        updatedUser = await User.findByIdAndUpdate(
+          userId,
+          {
+            isVipSubscriber: true,
+            vipPlan: chosenPlan,
+            vipExpiry: vipExpiryDate,
+          },
+          { new: true, runValidators: true }
+        ).select('-password');
+      }
+    } catch (dbErr) {
+      console.error('[ENDPOINT ERROR]', {
+        endpoint: req.originalUrl,
+        user: userId,
+        error: dbErr.message,
+        stack: dbErr.stack,
+      });
+    }
+
+    const memIdx = memoryUsers.findIndex((u) => (u._id || u.id).toString() === userId.toString());
+    if (memIdx !== -1) {
+      memoryUsers[memIdx].isVipSubscriber = true;
+      memoryUsers[memIdx].vipPlan = chosenPlan;
+      memoryUsers[memIdx].vipExpiry = vipExpiryDate;
+      if (!updatedUser) updatedUser = memoryUsers[memIdx];
+    }
+
+    if (!updatedUser) {
+      updatedUser = {
+        ...req.user,
+        isVipSubscriber: true,
+        vipPlan: chosenPlan,
+        vipExpiry: vipExpiryDate,
+      };
+    }
+
+    const token = generateToken(updatedUser);
+
+    return res.json({
+      success: true,
+      message: `🎉 VIP Subscription active: ${chosenPlan}`,
+      user: {
+        id: updatedUser._id,
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone || '',
+        address: updatedUser.address || '',
+        role: updatedUser.role,
+        loyaltyPoints: updatedUser.loyaltyPoints || 100,
+        isVipSubscriber: true,
+        vipPlan: chosenPlan,
+        vipExpiry: vipExpiryDate,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error('[ENDPOINT ERROR]', {
+      endpoint: req.originalUrl,
+      user: req.user?.id || req.user?._id,
+      error: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({ success: false, message: 'Server error activating VIP subscription' });
+  }
+};
+
+module.exports = { registerUser, loginUser, adminLogin, getMe, updateProfile, updateVipStatus, memoryUsers };
+

@@ -54,7 +54,7 @@ const seedInitialDataIfEmpty = async () => {
           role: 'admin',
           loyaltyPoints: 1000,
           phone: '+91 9876543210',
-          address: { street: '123 Tech Park', city: 'Coimbatore', state: 'Tamil Nadu', zipCode: '641001', country: 'India' }
+          address: '123 Tech Park, Coimbatore, Tamil Nadu, 641001, India'
         },
         {
           name: 'Alex Johnson',
@@ -63,7 +63,7 @@ const seedInitialDataIfEmpty = async () => {
           role: 'customer',
           loyaltyPoints: 250,
           phone: '+91 9123456789',
-          address: { street: '45 Green Street', city: 'Chennai', state: 'Tamil Nadu', zipCode: '600001', country: 'India' }
+          address: '45 Green Street, Chennai, Tamil Nadu, 600001, India'
         },
         {
           name: 'Sarah Williams',
@@ -72,7 +72,7 @@ const seedInitialDataIfEmpty = async () => {
           role: 'customer',
           loyaltyPoints: 500,
           phone: '+91 9988776655',
-          address: { street: '78 MG Road', city: 'Bengaluru', state: 'Karnataka', zipCode: '560001', country: 'India' }
+          address: '78 MG Road, Bengaluru, Karnataka, 560001, India'
         }
       ]);
     }
@@ -84,21 +84,37 @@ const seedInitialDataIfEmpty = async () => {
 
 const connectDB = async () => {
   const mongoURI = process.env.MONGODB_URI || 'mongodb+srv://barathsuriyas2025ece_db_user:EOordu3mFwp9fOjw@cluster0.oxzely0.mongodb.net/nexusmart?retryWrites=true&w=majority';
+  const localURI = 'mongodb://127.0.0.1:27017/nexusmart';
 
   try {
     const conn = await mongoose.connect(mongoURI, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 4000,
+      connectTimeoutMS: 5000,
     });
     isConnected = true;
+    isFallbackMode = false;
     console.log(`✅ MongoDB Atlas Connected: ${conn.connection.host}`);
     await seedInitialDataIfEmpty();
     return true;
   } catch (error) {
-    console.error(`❌ MongoDB Atlas Connection Warning: ${error.message}`);
-    console.log('🚀 Defaulting to Intelligent In-Memory Storage Mode for seamless operation.');
-    isFallbackMode = true;
-    return false;
+    console.warn(`⚠️ MongoDB Atlas Connection Warning: ${error.message}`);
+    console.log('🔄 Attempting local MongoDB connection (mongodb://127.0.0.1:27017/nexusmart)...');
+
+    try {
+      const connLocal = await mongoose.connect(localURI, {
+        serverSelectionTimeoutMS: 3000,
+      });
+      isConnected = true;
+      isFallbackMode = false;
+      console.log(`✅ Local MongoDB Connected: ${connLocal.connection.host}`);
+      await seedInitialDataIfEmpty();
+      return true;
+    } catch (localErr) {
+      console.error(`❌ Local MongoDB Connection Error: ${localErr.message}`);
+      console.log('🚀 Defaulting to Intelligent In-Memory Storage Mode for seamless operation.');
+      isFallbackMode = true;
+      return false;
+    }
   }
 };
 

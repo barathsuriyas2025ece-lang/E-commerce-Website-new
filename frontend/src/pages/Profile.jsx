@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Award, Mail, Phone, MapPin, Edit3, Save, CheckCircle2, User, Crown } from 'lucide-react';
+import { Award, Mail, Phone, MapPin, Edit3, Save, CheckCircle2, User, Crown, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { authAPI } from '../services/api';
 import SubscriptionModal from '../components/SubscriptionModal';
 
 const Profile = () => {
@@ -17,6 +18,7 @@ const Profile = () => {
   };
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: currentUser.name || '',
     email: currentUser.email || '',
@@ -24,24 +26,46 @@ const Profile = () => {
     address: currentUser.address || '101 Innovation Way, Bengaluru, India',
   });
   const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    const updatedUser = {
-      ...currentUser,
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      phone: formData.phone.trim(),
-      address: formData.address.trim(),
-    };
+    setErrorMsg('');
+    setSuccessMsg('');
+    setIsSaving(true);
 
-    if (setUser) {
-      setUser(updatedUser);
+    try {
+      const res = await authAPI.updateProfile({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        address: formData.address.trim(),
+      });
+
+      if (res.data && res.data.success) {
+        const updatedUser = res.data.user;
+        const newToken = res.data.token;
+
+        if (setUser) {
+          setUser(updatedUser);
+        }
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        if (newToken) {
+          localStorage.setItem('token', newToken);
+        }
+
+        setIsEditing(false);
+        setSuccessMsg(res.data.message || '🎉 Profile details updated successfully in MongoDB!');
+        setTimeout(() => setSuccessMsg(''), 4000);
+      } else {
+        setErrorMsg(res.data?.message || 'Failed to update profile. Please try again.');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Error saving profile changes.';
+      setErrorMsg(msg);
+    } finally {
+      setIsSaving(false);
     }
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    setIsEditing(false);
-    setSuccessMsg('🎉 Profile details updated successfully!');
-    setTimeout(() => setSuccessMsg(''), 4000);
   };
 
   const initialLetter = currentUser.name ? currentUser.name[0].toUpperCase() : 'U';
@@ -92,9 +116,16 @@ const Profile = () => {
 
       <SubscriptionModal isOpen={isSubModalOpen} onClose={() => setIsSubModalOpen(false)} />
 
+      {errorMsg && (
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl font-bold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
       {successMsg && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl font-bold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
