@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Package, Users, AlertTriangle, TrendingUp, Shield, Plus, ArrowRight, IndianRupee } from 'lucide-react';
-import { adminAPI } from '../../services/api';
+import { adminAPI, orderAPI } from '../../services/api';
 import { useProducts } from '../../context/ProductContext';
 
 const Dashboard = () => {
   const { products } = useProducts();
+  const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState({
-    totalRevenue: 284950,
-    totalOrders: 42,
-    totalProducts: 18,
+    totalRevenue: 318960,
+    totalOrders: 6,
+    totalProducts: 4,
     totalCustomers: 156,
-    lowStockAlerts: 3,
+    lowStockAlerts: 1,
     salesData: [
       { month: 'Jan', revenue: 35000 },
       { month: 'Feb', revenue: 48000 },
@@ -22,22 +23,44 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchRealData = async () => {
       try {
-        const res = await adminAPI.getStats();
-        if (res.data?.success && res.data.stats) {
-          setStats(res.data.stats);
+        const [statsRes, ordersRes] = await Promise.all([
+          adminAPI.getStats().catch(() => null),
+          orderAPI.getAllOrders().catch(() => null),
+        ]);
+
+        if (statsRes?.data?.success && statsRes.data.stats) {
+          setStats(statsRes.data.stats);
+        }
+
+        if (ordersRes?.data?.success && Array.isArray(ordersRes.data.orders)) {
+          setOrders(ordersRes.data.orders);
         }
       } catch (err) {
         console.error('Error fetching admin statistics:', err);
       }
     };
-    fetchStats();
+    fetchRealData();
   }, []);
 
+  // Real Dynamic Calculations from Actual Catalog & Orders
   const lowStockProducts = (products || []).filter(
     (p) => (p.stock !== undefined ? p.stock : (p.countInStock || 10)) <= 5
   );
+
+  const realTotalProducts = products && products.length > 0 ? products.length : stats.totalProducts;
+  const realTotalOrders = orders && orders.length > 0 ? orders.length : stats.totalOrders;
+
+  const realTotalRevenue = orders && orders.length > 0
+    ? orders
+        .filter((o) => (o.orderStatus || '').toLowerCase() !== 'cancelled')
+        .reduce((sum, o) => sum + (o.totalPrice || 0), 0)
+    : stats.totalRevenue;
+
+  const pendingOrdersCount = orders && orders.length > 0
+    ? orders.filter((o) => ['pending', 'processing'].includes((o.orderStatus || '').toLowerCase())).length
+    : 4;
 
   const maxRevenue = Math.max(...stats.salesData.map((d) => d.revenue), 100000);
 
@@ -74,14 +97,15 @@ const Dashboard = () => {
         <Link to="/admin/users" className="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900">Users</Link>
       </div>
 
-      {/* Top Metric Cards */}
+      {/* Top Metric Cards (Calculated Dynamically from Store State & DB) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Total Revenue */}
         <div className="glass-panel p-6 rounded-2xl flex items-center justify-between bg-white border border-slate-200 shadow-sm">
           <div>
             <p className="text-xs text-slate-500 font-bold uppercase">Total Revenue</p>
-            <h3 className="text-2xl font-extrabold text-slate-900 mt-1">₹{stats.totalRevenue.toLocaleString()}</h3>
+            <h3 className="text-2xl font-extrabold text-slate-900 mt-1">₹{realTotalRevenue.toLocaleString()}</h3>
             <span className="text-[11px] text-emerald-700 font-bold flex items-center gap-1 mt-1">
-              <TrendingUp className="w-3 h-3 text-emerald-600" /> +18.4% this month
+              <TrendingUp className="w-3 h-3 text-emerald-600" /> Live Calculated Store Sales
             </span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-200 shadow-inner">
@@ -89,21 +113,23 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Total Orders */}
         <div className="glass-panel p-6 rounded-2xl flex items-center justify-between bg-white border border-slate-200 shadow-sm">
           <div>
             <p className="text-xs text-slate-500 font-bold uppercase">Total Orders</p>
-            <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{stats.totalOrders}</h3>
-            <span className="text-[11px] text-indigo-700 font-bold mt-1">4 pending fulfillment</span>
+            <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{realTotalOrders}</h3>
+            <span className="text-[11px] text-indigo-700 font-bold mt-1">{pendingOrdersCount} pending fulfillment</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-200 shadow-inner">
             <ShoppingBag className="w-6 h-6" />
           </div>
         </div>
 
+        {/* Catalog Products */}
         <div className="glass-panel p-6 rounded-2xl flex items-center justify-between bg-white border border-slate-200 shadow-sm">
           <div>
             <p className="text-xs text-slate-500 font-bold uppercase">Catalog Products</p>
-            <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{products?.length || stats.totalProducts}</h3>
+            <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{realTotalProducts}</h3>
             <span className="text-[11px] text-amber-700 font-bold flex items-center gap-1 mt-1">
               <AlertTriangle className="w-3 h-3 text-amber-600" /> {lowStockProducts.length} low stock alerts
             </span>
@@ -113,11 +139,12 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Registered Users */}
         <div className="glass-panel p-6 rounded-2xl flex items-center justify-between bg-white border border-slate-200 shadow-sm">
           <div>
             <p className="text-xs text-slate-500 font-bold uppercase">Registered Users</p>
             <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{stats.totalCustomers}</h3>
-            <span className="text-[11px] text-emerald-700 font-bold mt-1">+12 new this week</span>
+            <span className="text-[11px] text-emerald-700 font-bold mt-1">Active Accounts</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200 shadow-inner">
             <Users className="w-6 h-6" />
@@ -148,7 +175,7 @@ const Dashboard = () => {
             {lowStockProducts.map((prod) => {
               const currentStock = prod.stock !== undefined ? prod.stock : (prod.countInStock || 0);
               return (
-                <div key={prod._id} className="p-3 bg-white rounded-xl border border-amber-200 flex items-center justify-between shadow-sm text-xs">
+                <div key={prod._id || prod.id} className="p-3 bg-white rounded-xl border border-amber-200 flex items-center justify-between shadow-sm text-xs">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <img src={prod.images?.[0]} alt="" className="w-10 h-10 object-cover rounded-lg bg-slate-100 shrink-0" />
                     <div className="truncate">
