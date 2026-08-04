@@ -208,14 +208,22 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
+    const updateData = { ...req.body };
+    delete updateData._id;
+
     try {
-      const updated = await Product.findByIdAndUpdate(id, req.body, { new: true });
+      let updated = await Product.findByIdAndUpdate(id, updateData, { new: true });
+      if (!updated) {
+        updated = await Product.findOneAndUpdate({ _id: id }, updateData, { new: true, upsert: true });
+      }
       if (updated) return res.json({ success: true, product: updated });
-    } catch (err) {}
+    } catch (err) {
+      console.error('MongoDB updateProduct warning:', err.message);
+    }
 
     const index = memoryProducts.findIndex((p) => (p._id || p.id || '').toString() === id.toString());
     if (index !== -1) {
-      memoryProducts[index] = { ...memoryProducts[index], ...req.body };
+      memoryProducts[index] = { ...memoryProducts[index], ...updateData };
       return res.json({ success: true, product: memoryProducts[index] });
     }
 
@@ -230,7 +238,9 @@ const deleteProduct = async (req, res) => {
     const { id } = req.params;
     try {
       await Product.findByIdAndDelete(id);
-    } catch (err) {}
+    } catch (err) {
+      console.error('MongoDB deleteProduct warning:', err.message);
+    }
 
     memoryProducts = memoryProducts.filter((p) => (p._id || p.id || '').toString() !== id.toString());
     res.json({ success: true, message: 'Product removed successfully' });
