@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { DollarSign, ShoppingBag, Package, Users, AlertTriangle, TrendingUp, Shield, Plus, ArrowRight, RefreshCw } from 'lucide-react';
+import { ShoppingBag, Package, Users, AlertTriangle, TrendingUp, Shield, Plus, ArrowRight, IndianRupee } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import { useProducts } from '../../context/ProductContext';
 
@@ -25,7 +25,7 @@ const Dashboard = () => {
     const fetchStats = async () => {
       try {
         const res = await adminAPI.getStats();
-        if (res.data.success) {
+        if (res.data?.success && res.data.stats) {
           setStats(res.data.stats);
         }
       } catch (err) {
@@ -38,6 +38,8 @@ const Dashboard = () => {
   const lowStockProducts = (products || []).filter(
     (p) => (p.stock !== undefined ? p.stock : (p.countInStock || 10)) <= 5
   );
+
+  const maxRevenue = Math.max(...stats.salesData.map((d) => d.revenue), 100000);
 
   return (
     <div className="space-y-8 pb-16">
@@ -65,7 +67,7 @@ const Dashboard = () => {
 
       {/* Admin Nav Tabs */}
       <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto text-xs font-bold">
-        <Link to="/admin/dashboard" className="px-4 py-2 rounded-lg bg-indigo-600 text-white shadow-sm">Overview</Link>
+        <Link to="/admin/dashboard" className="px-4 py-2 rounded-lg bg-indigo-600 text-white shadow-sm font-black">Overview</Link>
         <Link to="/admin/products" className="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900">Products</Link>
         <Link to="/admin/orders" className="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900">Orders</Link>
         <Link to="/admin/coupons" className="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900">Coupons</Link>
@@ -82,8 +84,8 @@ const Dashboard = () => {
               <TrendingUp className="w-3 h-3 text-emerald-600" /> +18.4% this month
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-200">
-            <DollarSign className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-200 shadow-inner">
+            <IndianRupee className="w-6 h-6" />
           </div>
         </div>
 
@@ -93,7 +95,7 @@ const Dashboard = () => {
             <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{stats.totalOrders}</h3>
             <span className="text-[11px] text-indigo-700 font-bold mt-1">4 pending fulfillment</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-200">
+          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-200 shadow-inner">
             <ShoppingBag className="w-6 h-6" />
           </div>
         </div>
@@ -106,7 +108,7 @@ const Dashboard = () => {
               <AlertTriangle className="w-3 h-3 text-amber-600" /> {lowStockProducts.length} low stock alerts
             </span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200 shadow-inner">
             <Package className="w-6 h-6" />
           </div>
         </div>
@@ -117,7 +119,7 @@ const Dashboard = () => {
             <h3 className="text-2xl font-extrabold text-slate-900 mt-1">{stats.totalCustomers}</h3>
             <span className="text-[11px] text-emerald-700 font-bold mt-1">+12 new this week</span>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200 shadow-inner">
             <Users className="w-6 h-6" />
           </div>
         </div>
@@ -167,24 +169,44 @@ const Dashboard = () => {
       )}
 
       {/* Visual Revenue Bar Graph */}
-      <div className="glass-panel p-6 rounded-2xl space-y-4 bg-white border border-slate-200 shadow-sm">
-        <h2 className="text-lg font-bold text-slate-900">Monthly Sales Breakdown</h2>
-        <div className="h-44 flex items-end justify-between gap-4 pt-8 px-4 border-b border-slate-100">
-          {stats.salesData.map((d, i) => {
-            const heightPercent = Math.round((d.revenue / 90000) * 100);
-            return (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                <span className="text-[10px] text-indigo-600 font-bold opacity-0 group-hover:opacity-100 transition">
-                  ₹{(d.revenue / 1000).toFixed(0)}k
-                </span>
-                <div
-                  style={{ height: `${heightPercent}%` }}
-                  className="w-full bg-gradient-to-t from-indigo-600 to-purple-600 rounded-t-lg transition-all duration-500 shadow-sm"
-                ></div>
-                <span className="text-xs text-slate-600 font-bold">{d.month}</span>
-              </div>
-            );
-          })}
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl space-y-6 bg-white border border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 className="text-xl font-extrabold text-slate-900">Monthly Revenue & Sales Breakdown</h2>
+            <p className="text-xs text-slate-500">Track monthly revenue trends and sales volume</p>
+          </div>
+          <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-black px-3 py-1 rounded-xl">
+            Total Year: ₹{stats.salesData.reduce((acc, curr) => acc + curr.revenue, 0).toLocaleString()}
+          </span>
+        </div>
+
+        {/* Dynamic Bar Graph */}
+        <div className="pt-6 pb-2">
+          <div className="h-56 flex items-end justify-between gap-3 sm:gap-6 px-2 sm:px-6 border-b border-slate-200 bg-slate-50/50 rounded-2xl p-4">
+            {stats.salesData.map((d, i) => {
+              const heightPercent = Math.max(15, Math.round((d.revenue / maxRevenue) * 100));
+
+              return (
+                <div key={i} className="flex-1 h-full flex flex-col justify-end items-center group">
+                  {/* Tooltip badge on hover / view */}
+                  <span className="text-[11px] font-black text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 shadow-sm mb-2 group-hover:scale-110 transition-transform">
+                    ₹{(d.revenue / 1000).toFixed(1)}k
+                  </span>
+
+                  {/* Colored Gradient Bar */}
+                  <div className="w-full max-w-[64px] bg-slate-200 rounded-t-xl overflow-hidden flex items-end h-[75%]">
+                    <div
+                      style={{ height: `${heightPercent}%` }}
+                      className="w-full bg-gradient-to-t from-indigo-600 via-indigo-500 to-purple-500 rounded-t-xl transition-all duration-700 shadow-md group-hover:from-indigo-700 group-hover:to-purple-600"
+                    ></div>
+                  </div>
+
+                  {/* Month Label */}
+                  <span className="text-xs text-slate-700 font-extrabold mt-3">{d.month}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -192,4 +214,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
