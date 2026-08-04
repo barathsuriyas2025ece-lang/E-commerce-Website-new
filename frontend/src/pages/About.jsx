@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, ShieldCheck, Truck, Award, Target, Users, Zap, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ShieldCheck, Truck, Award, Users, Zap, ArrowRight } from 'lucide-react';
 
 const stats = [
   { label: 'Active Shoppers', value: '1,000,000+', icon: Users },
@@ -34,13 +34,6 @@ const values = [
     icon: Zap,
     color: 'bg-amber-600 text-white',
   },
-];
-
-const team = [
-  { name: 'Barath Suriya', role: 'Founder & CEO', avatar: 'BS' },
-  { name: 'Ananya Sharma', role: 'Head of Engineering', avatar: 'AS' },
-  { name: 'Karthik Raja', role: 'VP of Product & AI', avatar: 'KR' },
-  { name: 'Priya Verma', role: 'Head of Customer Experience', avatar: 'PV' },
 ];
 
 const About = () => {
@@ -113,28 +106,6 @@ const About = () => {
               </div>
             );
           })}
-        </div>
-      </section>
-
-      {/* 👥 Leadership & Team */}
-      <section className="space-y-8 bg-slate-100 p-8 sm:p-10 rounded-3xl">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-black text-slate-900">Leadership Team</h2>
-          <p className="text-xs text-slate-600">Driven by tech innovators and retail experts.</p>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-          {team.map((member, idx) => (
-            <div key={idx} className="bg-white p-5 rounded-2xl border border-slate-200 text-center space-y-3 shadow-sm">
-              <div className="w-16 h-16 rounded-full bg-indigo-600 text-white font-black text-xl flex items-center justify-center mx-auto shadow-md">
-                {member.avatar}
-              </div>
-              <div>
-                <h4 className="font-extrabold text-sm text-slate-900">{member.name}</h4>
-                <p className="text-[11px] font-semibold text-indigo-600">{member.role}</p>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
     </div>
