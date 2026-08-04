@@ -389,6 +389,8 @@ export const couponAPI = {
     }
   },
   getCoupons: () => api.get('/coupons'),
+  createCoupon: (data) => api.post('/coupons', data),
+  deleteCoupon: (id) => api.delete(`/coupons/${id}`),
 };
 
 export const adminAPI = {

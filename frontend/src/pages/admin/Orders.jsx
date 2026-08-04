@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, MapPin, Truck, User, Package, CheckCircle2, Clock, CreditCard, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ShoppingBag, MapPin, Truck, User, Package, CheckCircle2, Clock, CreditCard, Eye, Shield } from 'lucide-react';
 import { orderAPI, fallbackSampleOrders } from '../../services/api';
 
 const statusColors = {
@@ -50,15 +51,29 @@ const AdminOrders = () => {
 
   return (
     <div className="space-y-8 pb-16">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      {/* Header Banner */}
+      <div className="glass-panel p-8 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
+            <Shield className="w-4 h-4 text-indigo-600" />
+            <span>Admin Control Panel</span>
+          </div>
           <h1 className="text-3xl font-extrabold text-slate-900">Order Delivery & Fulfillment</h1>
-          <p className="text-xs text-slate-500">View customer orders, delivery addresses, items list, and dispatch status</p>
+          <p className="text-xs text-slate-500 mt-1">View customer orders, delivery addresses, items list, and dispatch status</p>
         </div>
         <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 px-4 py-2 rounded-xl text-xs text-indigo-700 font-bold">
           <ShoppingBag className="w-4 h-4 text-indigo-600" />
           <span>{orders.length} Total Orders Received</span>
         </div>
+      </div>
+
+      {/* Admin Subnav Tabs */}
+      <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto text-xs font-bold">
+        <Link to="/admin/dashboard" className="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900">Overview</Link>
+        <Link to="/admin/products" className="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900">Products</Link>
+        <Link to="/admin/orders" className="px-4 py-2 rounded-lg bg-indigo-600 text-white shadow-sm font-black">Orders</Link>
+        <Link to="/admin/coupons" className="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900">Coupons</Link>
+        <Link to="/admin/users" className="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900">Users</Link>
       </div>
 
       {/* Orders Table */}
@@ -179,7 +194,7 @@ const AdminOrders = () => {
                     <td className="p-4 text-right">
                       <button
                         onClick={() => setSelectedOrder(o)}
-                        className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition font-bold inline-flex items-center gap-1"
+                        className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition font-bold inline-flex items-center gap-1 cursor-pointer"
                         title="View Delivery Slip"
                       >
                         <Eye className="w-4 h-4" />
