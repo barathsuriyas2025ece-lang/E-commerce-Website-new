@@ -5,11 +5,13 @@ const { sendLoginNotificationEmail, sendWelcomeEmail } = require('../notificatio
 
 const ADMIN_EMAIL = 'barathsuriya.s2025ece@sece.ac.in';
 
+// Pre-register Admin user in memory store with hashed password
 let memoryUsers = [
   {
     _id: 'user_admin_001',
     name: 'Barath Suriya (Admin)',
     email: ADMIN_EMAIL,
+    password: bcrypt.hashSync('barath12345', 10),
     role: 'admin',
     loyaltyPoints: 1000,
     createdAt: new Date(),
@@ -24,7 +26,6 @@ const generateToken = (user) => {
   );
 };
 
-// Input sanitization helper to prevent Injection attacks
 const sanitizeInput = (str) => {
   if (typeof str !== 'string') return '';
   return str.replace(/[$\{\}]/g, '').trim();
@@ -72,16 +73,16 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Password must be at least 5 characters long' });
     }
 
-    // Check if email already registered in memory or DB
+    // Check if user already registered in memory or DB
     const isExistingMemory = memoryUsers.some((u) => u.email === cleanEmail);
     if (isExistingMemory) {
-      return res.status(400).json({ success: false, message: 'An account with this email already exists' });
+      return res.status(400).json({ success: false, message: 'An account with this email address already exists. Please sign in.' });
     }
 
     try {
       const existingUser = await User.findOne({ email: cleanEmail });
       if (existingUser) {
-        return res.status(400).json({ success: false, message: 'An account with this email already exists' });
+        return res.status(400).json({ success: false, message: 'An account with this email address already exists. Please sign in.' });
       }
 
       const salt = await bcrypt.genSalt(10);
@@ -94,11 +95,12 @@ const registerUser = async (req, res) => {
         role: role === 'admin' && cleanEmail === ADMIN_EMAIL ? 'admin' : 'customer',
       });
 
-      // Also track in memoryUsers for real-time admin sync
+      // Track registered user in memory array with hashedPassword
       memoryUsers.push({
         _id: user._id.toString(),
         name: user.name,
         email: user.email,
+        password: hashedPassword,
         role: user.role,
         loyaltyPoints: user.loyaltyPoints || 100,
         createdAt: user.createdAt || new Date(),
@@ -113,7 +115,7 @@ const registerUser = async (req, res) => {
         user: { id: user._id, name: user.name, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints },
       });
     } catch (dbErr) {
-      // In-Memory Mode with Hash Verification
+      // In-Memory Registration with Bcrypt Hashing
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -139,7 +141,7 @@ const registerUser = async (req, res) => {
       });
     }
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server authentication error' });
+    res.status(500).json({ success: false, message: 'Server registration error' });
   }
 };
 
@@ -147,73 +149,63 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide email and password' });
+      return res.status(400).json({ success: false, message: 'Please enter both registered email and password' });
     }
 
     const cleanEmail = sanitizeInput(email).toLowerCase();
 
     if (!validateEmailFormat(cleanEmail)) {
-      return res.status(400).json({ success: false, message: 'Please provide a valid email address format' });
+      return res.status(400).json({ success: false, message: 'Please enter a valid email address format' });
     }
 
-    // Admin authentication check
-    if (cleanEmail === ADMIN_EMAIL && (password === 'barath12345' || password === 'admin123')) {
-      const adminUser = {
-        _id: 'user_admin_001',
-        name: 'Barath Suriya (Admin)',
-        email: ADMIN_EMAIL,
-        role: 'admin',
-        loyaltyPoints: 1000,
-      };
-      const token = generateToken(adminUser);
-      triggerAsyncLoginEmail(adminUser.name, adminUser.email, req);
-
-      return res.json({
-        success: true,
-        token,
-        user: adminUser,
-      });
-    }
-
-    // Database lookup with bcrypt hash comparison
+    // 1. Try Database lookup
     try {
-      const user = await User.findOne({ email: cleanEmail });
-      if (user && (await bcrypt.compare(password, user.password))) {
-        const token = generateToken(user);
-        triggerAsyncLoginEmail(user.name || cleanEmail.split('@')[0], user.email, req);
+      const dbUser = await User.findOne({ email: cleanEmail });
+      if (dbUser) {
+        const isMatch = await bcrypt.compare(password, dbUser.password);
+        if (isMatch) {
+          const token = generateToken(dbUser);
+          triggerAsyncLoginEmail(dbUser.name, dbUser.email, req);
+
+          return res.json({
+            success: true,
+            token,
+            user: { id: dbUser._id, name: dbUser.name, email: dbUser.email, role: dbUser.role, loyaltyPoints: dbUser.loyaltyPoints },
+          });
+        } else {
+          return res.status(400).json({ success: false, message: 'Invalid password. Please check your password and try again.' });
+        }
+      }
+    } catch (dbErr) {}
+
+    // 2. Try Memory lookup for registered users
+    const memoryMatch = memoryUsers.find((u) => u.email === cleanEmail);
+    if (memoryMatch) {
+      let isMatch = false;
+      if (memoryMatch.password.startsWith('$2a$') || memoryMatch.password.startsWith('$2b$')) {
+        isMatch = await bcrypt.compare(password, memoryMatch.password);
+      } else {
+        isMatch = password === memoryMatch.password;
+      }
+
+      if (isMatch) {
+        const token = generateToken(memoryMatch);
+        triggerAsyncLoginEmail(memoryMatch.name, memoryMatch.email, req);
 
         return res.json({
           success: true,
           token,
-          user: { id: user._id, name: user.name, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints },
+          user: { id: memoryMatch._id, name: memoryMatch.name, email: memoryMatch.email, role: memoryMatch.role, loyaltyPoints: memoryMatch.loyaltyPoints || 100 },
         });
-      } else if (user) {
-        return res.status(400).json({ success: false, message: 'Invalid email or password' });
+      } else {
+        return res.status(400).json({ success: false, message: 'Invalid password. Please check your password and try again.' });
       }
-    } catch (dbErr) {}
-
-    // Fallback Customer Authentication
-    const role = cleanEmail === ADMIN_EMAIL ? 'admin' : 'customer';
-    const name = cleanEmail === ADMIN_EMAIL ? 'Barath Suriya (Admin)' : cleanEmail.split('@')[0];
-    const authenticatedUser = {
-      _id: 'user_' + Date.now(),
-      name,
-      email: cleanEmail,
-      role,
-      loyaltyPoints: 150,
-    };
-
-    if (!memoryUsers.some((u) => u.email === cleanEmail)) {
-      memoryUsers.push(authenticatedUser);
     }
 
-    const token = generateToken(authenticatedUser);
-    triggerAsyncLoginEmail(authenticatedUser.name, authenticatedUser.email, req);
-
-    return res.json({
-      success: true,
-      token,
-      user: authenticatedUser,
+    // 3. User email is not registered in system
+    return res.status(400).json({
+      success: false,
+      message: 'Account not found. Please register your account first before signing in.',
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server authentication error' });
@@ -232,19 +224,19 @@ const adminLogin = async (req, res) => {
   try {
     const { password } = req.body;
     if (!password) {
-      return res.status(400).json({ success: false, message: 'Please enter admin password' });
+      return res.status(400).json({ success: false, message: 'Please enter admin security passcode' });
     }
 
     const inputPass = String(password).trim().toLowerCase();
     const validPasswords = ['admin123', 'barath12345', 'admin', 'admin12345', (process.env.ADMIN_PASSWORD || '').toLowerCase()].filter(Boolean);
 
     if (!validPasswords.includes(inputPass)) {
-      return res.status(401).json({ success: false, message: 'Invalid Admin Passcode. Access Denied.' });
+      return res.status(401).json({ success: false, message: 'Invalid Admin Security Passcode. Access Denied.' });
     }
 
     const adminUser = {
       _id: 'user_admin_001',
-      name: 'System Administrator',
+      name: 'Barath Suriya (Admin)',
       email: ADMIN_EMAIL,
       role: 'admin',
       loyaltyPoints: 1000,

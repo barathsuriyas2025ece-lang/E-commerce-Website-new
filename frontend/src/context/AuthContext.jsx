@@ -39,29 +39,16 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (err) {
       console.warn('Backend login response check:', err?.response?.data || err.message);
-      if (err?.response?.data?.message) {
-        setLoading(false);
-        return { success: false, message: err.response.data.message };
-      }
+      const errMsg = err?.response?.data?.message || 'Account not registered. Please register your account first before signing in.';
+      setLoading(false);
+      return { success: false, message: errMsg };
     }
 
-    // Resilient fallback user session creation
-    const fallbackUser = {
-      _id: 'user_' + Date.now(),
-      name: cleanEmail.split('@')[0] || 'Customer',
-      email: cleanEmail,
-      role: 'customer',
-      loyaltyPoints: 100,
-    };
-    const fallbackToken = 'user_jwt_token_' + Date.now();
-
-    setUser(fallbackUser);
-    setToken(fallbackToken);
-    localStorage.setItem('user', JSON.stringify(fallbackUser));
-    localStorage.setItem('token', fallbackToken);
-    setNotification(`📧 Welcome back! Sign-in successful.`);
     setLoading(false);
-    return { success: true, user: fallbackUser };
+    return {
+      success: false,
+      message: 'Account not registered. Please register your account first before signing in.',
+    };
   };
 
   const register = async (name, email, password, role) => {
