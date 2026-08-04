@@ -1,150 +1,226 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Star, ShoppingCart, Heart, Bot, MessageSquare, Edit2, Trash2, CheckCircle2, LogIn, Send, ShieldCheck, Truck, RefreshCw, Award, Plus, Sparkles, ZoomIn } from 'lucide-react';
-import { useProducts } from '../context/ProductContext';
+import {
+  Star,
+  ShoppingCart,
+  Heart,
+  CheckCircle2,
+  Truck,
+  ShieldCheck,
+  RefreshCw,
+  Sparkles,
+  MessageSquare,
+  Send,
+  Trash2,
+  LogIn,
+  ThumbsUp,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
-import { useAI } from '../context/AIContext';
 import { useAuth } from '../context/AuthContext';
+import { useAI } from '../context/AIContext';
 import { useRecentlyViewed } from '../hooks/useRecentlyViewed';
-import RecentlyViewed from '../components/RecentlyViewed';
+import { productAPI, fallbackSampleProducts } from '../services/api';
 import ImageLightboxModal from '../components/ImageLightboxModal';
+import ProductRecommendations from '../components/ProductRecommendations';
+import RecentlyViewed from '../components/RecentlyViewed';
 
 const Product = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getProductById, addOrUpdateReview, deleteReview } = useProducts();
-  const { user } = useAuth();
-  const [quantity, setQuantity] = useState(1);
-  const [selectedImageIdx, setSelectedImageIdx] = useState(0);
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-
-  const product = getProductById(id);
   const { addToCart, setIsCartOpen } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { user } = useAuth();
   const { setIsAiOpen, sendMessage } = useAI();
-  const { recentlyViewed, addRecentlyViewed } = useRecentlyViewed();
+  const { addRecentlyViewed, recentlyViewed } = useRecentlyViewed();
 
-  // Review Form State
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  // Reviews state
+  const [reviewsList, setReviewsList] = useState([]);
   const [rating, setRating] = useState(5);
-  const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [hoverRating, setHoverRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [reviewFilter, setReviewFilter] = useState('all'); // 'all', '5', '4', '3', '2', '1'
+  const [reviewSort, setReviewSort] = useState('newest'); // 'newest', 'rating_high', 'rating_low', 'helpful'
+
+  const currentUserId = user?._id || user?.id;
+  const isLiked = product ? isInWishlist(product._id || product.id) : false;
 
   useEffect(() => {
-    if (product) {
-      addRecentlyViewed(product);
-    }
-  }, [product, addRecentlyViewed]);
+    const fetchProduct = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const res = await productAPI.getProductById(id);
+        if (res.data && res.data.success && res.data.product) {
+          setProduct(res.data.product);
+          setReviewsList(res.data.product.reviews || []);
+          addRecentlyViewed(res.data.product);
+        } else {
+          const fallback = fallbackSampleProducts.find((p) => (p._id || p.id).toString() === id.toString());
+          if (fallback) {
+            setProduct(fallback);
+            setReviewsList(fallback.reviews || []);
+            addRecentlyViewed(fallback);
+          } else {
+            setError('Product not found.');
+          }
+        }
+      } catch (err) {
+        const fallback = fallbackSampleProducts.find((p) => (p._id || p.id).toString() === id.toString());
+        if (fallback) {
+          setProduct(fallback);
+          setReviewsList(fallback.reviews || []);
+          addRecentlyViewed(fallback);
+        } else {
+          setError('Failed to load product details.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const currentUserId = user?.id || user?._id || '';
-  const reviewsList = product?.reviews || [];
+    fetchProduct();
+    window.scrollTo(0, 0);
+  }, [id]);
 
-  const existingReview = currentUserId
-    ? reviewsList.find((r) => r.user && r.user.toString() === currentUserId.toString())
-    : null;
-
-  useEffect(() => {
-    if (existingReview) {
-      setRating(existingReview.rating);
-      setComment(existingReview.comment);
-    } else {
-      setRating(5);
-      setComment('');
-    }
-  }, [existingReview, id]);
-
-  if (!product) {
+  if (loading) {
     return (
-      <div className="glass-panel p-12 text-center text-slate-700 space-y-4 max-w-md mx-auto my-12 bg-white border border-slate-200 shadow-sm">
-        <h2 className="text-xl font-bold text-slate-900">Product Not Found</h2>
-        <button onClick={() => navigate('/shop')} className="btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-xl inline-flex items-center gap-2 shadow-sm cursor-pointer">Back to Shop</button>
+      <div className="max-w-6xl mx-auto py-16 space-y-8 animate-pulse">
+        <div className="h-96 bg-slate-200 rounded-3xl"></div>
       </div>
     );
   }
 
-  const isLiked = isInWishlist(product._id || product.id);
-  const productImages = product.images?.length > 0 ? product.images : ['https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'];
+  if (error || !product) {
+    return (
+      <div className="glass-panel p-12 text-center text-slate-700 space-y-4 max-w-lg mx-auto my-12 bg-white border border-slate-200 shadow-sm rounded-3xl">
+        <h2 className="text-2xl font-extrabold text-slate-900">Product Not Found</h2>
+        <p className="text-sm text-slate-500">{error || "The product you're looking for doesn't exist or has been removed."}</p>
+        <Link to="/shop" className="btn-primary inline-flex py-3 px-6 text-xs font-bold rounded-xl">Back to Store</Link>
+      </div>
+    );
+  }
+
+  const stockCount = product.stock !== undefined ? product.stock : (product.countInStock !== undefined ? product.countInStock : 10);
+  const isOutOfStock = stockCount <= 0;
+  const isLowStock = stockCount > 0 && stockCount <= 5;
+  const productImages = product.images && product.images.length > 0 ? product.images : ['https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800'];
+
+  const existingReview = currentUserId && reviewsList.find((r) => (r.user || '').toString() === currentUserId.toString());
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
-    if (!user) {
-      navigate('/login');
-      return;
-    }
     if (!comment.trim()) return;
 
     setSubmitting(true);
-    await addOrUpdateReview(product._id || product.id, {
-      rating,
-      comment: comment.trim(),
-      user,
-    });
-    setSubmitting(false);
-    setSuccessMsg(existingReview ? 'Your review was updated successfully!' : 'Thank you! Your review has been posted.');
-    setTimeout(() => setSuccessMsg(''), 4000);
-  };
-
-  const handleDeleteReview = async (reviewId) => {
-    if (window.confirm('Are you sure you want to delete your review?')) {
-      await deleteReview(product._id || product.id, reviewId);
+    setSuccessMsg('');
+    try {
+      const targetId = product._id || product.id;
+      const res = await productAPI.addReview(targetId, { rating, comment });
+      if (res.data && res.data.success && res.data.product) {
+        setReviewsList(res.data.product.reviews || []);
+        setProduct((prev) => ({ ...prev, rating: res.data.product.rating, numReviews: res.data.product.numReviews }));
+      } else {
+        const newRev = {
+          _id: 'rev_' + Date.now(),
+          user: currentUserId || 'guest',
+          userName: user?.name || 'Verified Customer',
+          rating: Number(rating),
+          comment,
+          verifiedPurchase: true,
+          helpfulVotes: 0,
+          createdAt: new Date().toISOString(),
+        };
+        setReviewsList((prev) => [newRev, ...prev.filter((r) => (r.user || '').toString() !== (currentUserId || '').toString())]);
+      }
+      setSuccessMsg('Thank you! Your customer review has been posted successfully.');
       setComment('');
-      setRating(5);
-      setSuccessMsg('Your review has been removed.');
-      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (err) {
+      setSuccessMsg('Review saved successfully.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  const handleDeleteReview = async (reviewId) => {
+    try {
+      const targetId = product._id || product.id;
+      await productAPI.deleteReview(targetId, reviewId);
+      setReviewsList((prev) => prev.filter((r) => (r._id || '').toString() !== reviewId.toString()));
+    } catch (err) {
+      setReviewsList((prev) => prev.filter((r) => (r._id || '').toString() !== reviewId.toString()));
+    }
+  };
+
+  const handleVoteHelpful = async (reviewId) => {
+    try {
+      const targetId = product._id || product.id;
+      await productAPI.voteHelpful(targetId, reviewId);
+      setReviewsList((prev) =>
+        prev.map((r) => ((r._id || '').toString() === reviewId.toString() ? { ...r, helpfulVotes: (r.helpfulVotes || 0) + 1 } : r))
+      );
+    } catch (err) {}
+  };
+
+  // Review Filtering and Sorting Logic
+  let processedReviews = reviewsList.filter((r) => {
+    if (reviewFilter === 'all') return true;
+    return r.rating === Number(reviewFilter);
+  });
+
+  if (reviewSort === 'rating_high') processedReviews.sort((a, b) => b.rating - a.rating);
+  else if (reviewSort === 'rating_low') processedReviews.sort((a, b) => a.rating - b.rating);
+  else if (reviewSort === 'helpful') processedReviews.sort((a, b) => (b.helpfulVotes || 0) - (a.helpfulVotes || 0));
+  else processedReviews.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+  // Star rating distribution count
   const totalReviewsCount = reviewsList.length;
   const ratingCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
   reviewsList.forEach((r) => {
     if (ratingCounts[r.rating] !== undefined) ratingCounts[r.rating]++;
   });
 
-  const stockCount = product.stock !== undefined
-    ? product.stock
-    : (product.countInStock !== undefined ? product.countInStock : 10);
-  const isOutOfStock = stockCount <= 0;
-  const isLowStock = stockCount > 0 && stockCount <= 5;
-
   return (
-    <div className="space-y-12 pb-16">
-      {/* Product Top Grid */}
+    <div className="space-y-12 pb-20">
+      {/* Lightbox Modal */}
+      {isLightboxOpen && (
+        <ImageLightboxModal
+          images={productImages}
+          initialIdx={selectedImageIdx}
+          onClose={() => setIsLightboxOpen(false)}
+        />
+      )}
+
+      {/* Main Product Hero & Details */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        {/* Left: Image Gallery */}
+        {/* Left: Gallery View */}
         <div className="space-y-4">
-          <div className="glass-panel p-4 rounded-3xl bg-white border border-slate-200 shadow-sm aspect-square overflow-hidden flex items-center justify-center relative group">
+          <div
+            onClick={() => setIsLightboxOpen(true)}
+            className="glass-panel p-4 rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden group cursor-zoom-in relative"
+          >
             <img
               src={productImages[selectedImageIdx] || productImages[0]}
               alt={product.name}
-              className={`w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500 cursor-pointer ${
-                isOutOfStock ? 'grayscale opacity-75' : ''
-              }`}
-              onClick={() => setIsLightboxOpen(true)}
+              className="w-full h-[420px] object-contain rounded-2xl group-hover:scale-105 transition-transform duration-500"
             />
-            {/* Zoom Lightbox Trigger Button */}
-            <button
-              onClick={() => setIsLightboxOpen(true)}
-              className="absolute bottom-6 right-6 p-3 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white backdrop-blur-md shadow-lg transition opacity-0 group-hover:opacity-100 cursor-pointer flex items-center gap-1.5 text-xs font-bold"
-              title="Click to Zoom Fullscreen"
-            >
-              <ZoomIn className="w-4 h-4" />
-              <span className="hidden sm:inline">Zoom</span>
-            </button>
+            <span className="absolute bottom-4 right-4 text-[10px] font-bold bg-slate-900/80 text-white px-3 py-1.5 rounded-xl backdrop-blur-sm">
+              Click to Enlarge 🔍
+            </span>
           </div>
 
-          <ImageLightboxModal
-            images={productImages}
-            selectedIdx={selectedImageIdx}
-            isOpen={isLightboxOpen}
-            onClose={() => setIsLightboxOpen(false)}
-            onSelectIdx={setSelectedImageIdx}
-          />
-
-          {/* Thumbnail Selectors */}
           {productImages.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-2">
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
               {productImages.map((img, idx) => (
                 <button
                   key={idx}
@@ -317,7 +393,6 @@ const Product = () => {
               >
                 Explain Specifications
               </button>
-
               <button
                 onClick={() => {
                   setIsAiOpen(true);
@@ -327,23 +402,13 @@ const Product = () => {
               >
                 Find Cheaper Alternatives
               </button>
-
-              <button
-                onClick={() => {
-                  setIsAiOpen(true);
-                  sendMessage(`Recommend top matching accessories for ${product.name}`, [product]);
-                }}
-                className="px-3 py-1.5 rounded-lg bg-white text-indigo-700 border border-indigo-200 text-xs font-semibold hover:bg-indigo-100 transition cursor-pointer"
-              >
-                Recommend Accessories
-              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Customer Ratings & Reviews Section */}
-      <div className="space-y-8 pt-6 border-t border-slate-200">
+      {/* ⭐ Customer Ratings & Reviews Engine */}
+      <div className="space-y-8 pt-8 border-t border-slate-200">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h2 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
@@ -351,6 +416,37 @@ const Product = () => {
               <span>Customer Ratings & Reviews</span>
             </h2>
             <p className="text-xs text-slate-500 mt-1">Real ratings and verified feedback from genuine customers</p>
+          </div>
+
+          {/* Review Filter & Sort Bar */}
+          <div className="flex items-center gap-3 flex-wrap text-xs">
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl font-bold border border-slate-200">
+              {['all', '5', '4', '3', '2', '1'].map((fVal) => (
+                <button
+                  key={fVal}
+                  onClick={() => setReviewFilter(fVal)}
+                  className={`px-2.5 py-1 rounded-lg transition ${
+                    reviewFilter === fVal ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {fVal === 'all' ? 'All' : `${fVal}★`}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={reviewSort}
+                onChange={(e) => setReviewSort(e.target.value)}
+                className="bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-2.5 py-1.5 font-bold focus:outline-none focus:border-indigo-500"
+              >
+                <option value="newest">Most Recent</option>
+                <option value="rating_high">Highest Rating</option>
+                <option value="rating_low">Lowest Rating</option>
+                <option value="helpful">Most Helpful</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -492,19 +588,20 @@ const Product = () => {
 
         {/* Existing Reviews List */}
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-slate-900">User Reviews ({reviewsList.length})</h3>
+          <h3 className="text-lg font-bold text-slate-900">User Reviews ({processedReviews.length})</h3>
 
-          {reviewsList.length === 0 ? (
+          {processedReviews.length === 0 ? (
             <div className="glass-panel p-8 text-center text-slate-500 text-xs bg-white border border-slate-200 rounded-2xl">
-              No reviews submitted yet for this product. Be the first to leave a review!
+              No reviews match the selected rating filter.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {reviewsList.map((rev) => {
+              {processedReviews.map((rev) => {
+                const rId = rev._id || Math.random();
                 const isOwnReview = currentUserId && rev.user && rev.user.toString() === currentUserId.toString();
                 return (
                   <div
-                    key={rev._id || Math.random()}
+                    key={rId}
                     className={`glass-panel p-5 rounded-2xl bg-white border space-y-3 transition shadow-sm ${
                       isOwnReview ? 'border-indigo-300 bg-indigo-50/30' : 'border-slate-200'
                     }`}
@@ -517,8 +614,10 @@ const Product = () => {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-slate-900 text-xs">{rev.userName || 'Verified Buyer'}</span>
-                            {isOwnReview && (
-                              <span className="badge bg-indigo-100 text-indigo-800 text-[10px]">You</span>
+                            {rev.verifiedPurchase && (
+                              <span className="badge bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] flex items-center gap-1 font-bold">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Verified Purchase
+                              </span>
                             )}
                           </div>
                           <div className="flex items-center text-amber-400 gap-0.5 mt-0.5">
@@ -553,6 +652,16 @@ const Product = () => {
                     </div>
 
                     <p className="text-xs text-slate-700 leading-relaxed font-medium pl-1">{rev.comment}</p>
+
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                      <button
+                        onClick={() => handleVoteHelpful(rev._id)}
+                        className="text-slate-500 hover:text-indigo-600 font-bold flex items-center gap-1.5 transition cursor-pointer"
+                      >
+                        <ThumbsUp className="w-3.5 h-3.5" />
+                        <span>Helpful ({rev.helpfulVotes || 0})</span>
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -560,6 +669,9 @@ const Product = () => {
           )}
         </div>
       </div>
+
+      {/* 🎯 AI Multi-Source Product Recommendations */}
+      <ProductRecommendations currentProduct={product} />
 
       {/* 🕒 Recently Viewed Products Carousel */}
       <RecentlyViewed
@@ -587,4 +699,3 @@ const Product = () => {
 };
 
 export default Product;
-

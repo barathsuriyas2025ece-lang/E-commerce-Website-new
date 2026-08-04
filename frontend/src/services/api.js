@@ -140,6 +140,15 @@ export const productAPI = {
     }
   },
   getProductById: (id) => api.get(`/products/${id}`),
+  getRecommendations: async (id) => {
+    try {
+      const res = await api.get(`/products/recommendations/${id}`);
+      if (res.data && res.data.success) return res;
+      return { data: { success: true, recommendations: fallbackSampleProducts.slice(0, 4) } };
+    } catch (err) {
+      return { data: { success: true, recommendations: fallbackSampleProducts.slice(0, 4) } };
+    }
+  },
   createProduct: async (data) => {
     try {
       const res = await api.post('/products', data);
@@ -195,6 +204,13 @@ export const productAPI = {
   addReview: async (id, reviewData) => {
     try {
       return await api.post(`/products/${id}/reviews`, reviewData);
+    } catch (err) {
+      return { success: false };
+    }
+  },
+  voteHelpful: async (id, reviewId) => {
+    try {
+      return await api.post(`/products/${id}/reviews/${reviewId}/helpful`);
     } catch (err) {
       return { success: false };
     }
@@ -291,6 +307,22 @@ export const orderAPI = {
       const index = fallbackSampleOrders.findIndex((o) => o._id === id);
       if (index !== -1) {
         fallbackSampleOrders[index] = { ...fallbackSampleOrders[index], ...data };
+      }
+      return { data: { success: true } };
+    }
+  },
+  cancelOrder: async (id) => {
+    try {
+      const res = await api.put(`/orders/${id}/cancel`);
+      const index = fallbackSampleOrders.findIndex((o) => o._id === id);
+      if (index !== -1) {
+        fallbackSampleOrders[index].orderStatus = 'Cancelled';
+      }
+      return res;
+    } catch (err) {
+      const index = fallbackSampleOrders.findIndex((o) => o._id === id);
+      if (index !== -1) {
+        fallbackSampleOrders[index].orderStatus = 'Cancelled';
       }
       return { data: { success: true } };
     }

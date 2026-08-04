@@ -150,4 +150,43 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, getMyOrders, getAllOrders, updateOrderStatus };
+// 🚫 Self-Service Order Cancellation (Restores Product Stock)
+const cancelOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    try {
+      const order = await Order.findById(id);
+      if (order) {
+        if (order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered') {
+          return res.status(400).json({ success: false, message: 'Order cannot be cancelled after shipping' });
+        }
+        order.orderStatus = 'Cancelled';
+        await order.save();
+
+        // Restore inventory stock
+        for (const item of order.orderItems) {
+          if (item.product) {
+            await Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } });
+          }
+        }
+        return res.json({ success: true, message: 'Order cancelled successfully and inventory stock restored', order });
+      }
+    } catch (dbErr) {}
+
+    const order = memoryOrders.find((o) => (o._id || o.id).toString() === id.toString());
+    if (order) {
+      if (order.orderStatus === 'Shipped' || order.orderStatus === 'Delivered') {
+        return res.status(400).json({ success: false, message: 'Order cannot be cancelled after shipping' });
+      }
+      order.orderStatus = 'Cancelled';
+      return res.json({ success: true, message: 'Order cancelled successfully', order });
+    }
+
+    res.status(404).json({ success: false, message: 'Order not found' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { createOrder, getMyOrders, getAllOrders, updateOrderStatus, cancelOrder };

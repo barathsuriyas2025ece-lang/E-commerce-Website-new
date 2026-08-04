@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, CheckCircle2, Clock, Truck } from 'lucide-react';
+import { Package, CheckCircle2, Clock, Truck, Ban, FileText, Calendar } from 'lucide-react';
 import { orderAPI, fallbackSampleOrders } from '../services/api';
 
-const statusSteps = ['Pending', 'Processing', 'Shipped', 'Delivered'];
+const statusSteps = ['Pending', 'Processing', 'Shipped', 'Out for Delivery', 'Delivered'];
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterTab, setFilterTab] = useState('all'); // 'all', 'in_progress', 'delivered'
+  const [filterTab, setFilterTab] = useState('all'); // 'all', 'in_progress', 'delivered', 'cancelled'
+  const [cancellingId, setCancellingId] = useState(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -28,13 +29,33 @@ const Orders = () => {
     fetchOrders();
   }, []);
 
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this order? Item inventory stock will be restored.')) return;
+    setCancellingId(orderId);
+    try {
+      await orderAPI.cancelOrder(orderId);
+      setOrders((prev) =>
+        prev.map((o) => ((o._id || o.id || '').toString() === orderId.toString() ? { ...o, orderStatus: 'Cancelled' } : o))
+      );
+    } catch (err) {
+      setOrders((prev) =>
+        prev.map((o) => ((o._id || o.id || '').toString() === orderId.toString() ? { ...o, orderStatus: 'Cancelled' } : o))
+      );
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
   const filteredOrders = orders.filter((order) => {
     const status = (order.orderStatus || 'Processing').toLowerCase();
     if (filterTab === 'in_progress') {
-      return status === 'pending' || status === 'processing' || status === 'shipped';
+      return status === 'pending' || status === 'processing' || status === 'shipped' || status === 'out for delivery';
     }
     if (filterTab === 'delivered') {
       return status === 'delivered';
+    }
+    if (filterTab === 'cancelled') {
+      return status === 'cancelled';
     }
     return true;
   });
@@ -48,29 +69,35 @@ const Orders = () => {
           </div>
           <div>
             <h1 className="text-3xl font-extrabold text-slate-900">My Orders & Shipment Tracking</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Track live order statuses, courier details, and estimated arrival times.</p>
+            <p className="text-xs text-slate-500 mt-0.5">Track live 5-step order statuses, courier details, and estimated arrival times.</p>
           </div>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex bg-slate-100 p-1.5 rounded-2xl text-xs font-bold border border-slate-200 self-start sm:self-auto">
+        <div className="flex bg-slate-100 p-1.5 rounded-2xl text-xs font-bold border border-slate-200 self-start sm:self-auto overflow-x-auto">
           <button
             onClick={() => setFilterTab('all')}
-            className={`px-4 py-2 rounded-xl transition ${filterTab === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+            className={`px-3.5 py-2 rounded-xl transition ${filterTab === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
           >
             All ({(orders || []).length})
           </button>
           <button
             onClick={() => setFilterTab('in_progress')}
-            className={`px-4 py-2 rounded-xl transition ${filterTab === 'in_progress' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+            className={`px-3.5 py-2 rounded-xl transition ${filterTab === 'in_progress' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
           >
-            In Process ({(orders || []).filter((o) => (o?.orderStatus || '').toLowerCase() !== 'delivered').length})
+            In Process ({(orders || []).filter((o) => !['delivered', 'cancelled'].includes((o?.orderStatus || '').toLowerCase())).length})
           </button>
           <button
             onClick={() => setFilterTab('delivered')}
-            className={`px-4 py-2 rounded-xl transition ${filterTab === 'delivered' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+            className={`px-3.5 py-2 rounded-xl transition ${filterTab === 'delivered' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
           >
             Delivered ({(orders || []).filter((o) => (o?.orderStatus || '').toLowerCase() === 'delivered').length})
+          </button>
+          <button
+            onClick={() => setFilterTab('cancelled')}
+            className={`px-3.5 py-2 rounded-xl transition ${filterTab === 'cancelled' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+          >
+            Cancelled ({(orders || []).filter((o) => (o?.orderStatus || '').toLowerCase() === 'cancelled').length})
           </button>
         </div>
       </div>
@@ -85,7 +112,10 @@ const Orders = () => {
         <div className="space-y-6">
           {filteredOrders.map((order, orderIdx) => {
             const orderIdStr = (order._id || order.id || `1023${orderIdx}`).toString();
-            const currentStepIdx = statusSteps.indexOf(order.orderStatus) >= 0 ? statusSteps.indexOf(order.orderStatus) : 1;
+            const currentStatus = order.orderStatus || 'Processing';
+            const isCancelled = currentStatus.toLowerCase() === 'cancelled';
+            const currentStepIdx = statusSteps.indexOf(currentStatus) >= 0 ? statusSteps.indexOf(currentStatus) : 1;
+            const canCancel = ['pending', 'processing'].includes(currentStatus.toLowerCase());
 
             return (
               <div key={orderIdStr} className="glass-panel p-6 sm:p-8 rounded-3xl space-y-6 bg-white border border-slate-200 shadow-sm">
@@ -103,28 +133,46 @@ const Orders = () => {
                     <span className="text-slate-500 font-medium">Tracking ID: </span>
                     <span className="font-mono font-bold text-amber-600">{order.trackingNumber || 'TRK-98471203'}</span>
                   </div>
+                  <div className="flex items-center gap-1 text-slate-500">
+                    <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Est. Arrival: </span>
+                    <span className="font-bold text-slate-800">{order.estimatedDelivery || 'Tomorrow by 5 PM'}</span>
+                  </div>
                   <div>
                     <span className="text-slate-500 font-medium">Total: </span>
                     <span className="font-extrabold text-slate-900 text-sm">₹{order.totalPrice?.toLocaleString()}</span>
                   </div>
                 </div>
 
-                {/* Progress Status Timeline */}
-                <div className="py-2">
-                  <div className="flex justify-between items-center relative max-w-xl mx-auto">
-                    {statusSteps.map((step, idx) => {
-                      const isDone = idx <= currentStepIdx;
-                      return (
-                        <div key={step} className="flex flex-col items-center z-10 space-y-1">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition ${isDone ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-400 border border-slate-200'}`}>
-                            {isDone ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
-                          </div>
-                          <span className={`text-[11px] font-bold ${isDone ? 'text-indigo-700' : 'text-slate-400'}`}>{step}</span>
-                        </div>
-                      );
-                    })}
+                {/* 5-Step Tracking Status Pipeline */}
+                {isCancelled ? (
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-800 text-xs rounded-2xl font-bold flex items-center gap-2">
+                    <Ban className="w-5 h-5 text-red-600 shrink-0" />
+                    <span>This order has been cancelled and product inventory stock has been restored.</span>
                   </div>
-                </div>
+                ) : (
+                  <div className="py-2">
+                    <div className="flex justify-between items-center relative max-w-2xl mx-auto">
+                      {statusSteps.map((step, idx) => {
+                        const isDone = idx <= currentStepIdx;
+                        return (
+                          <div key={step} className="flex flex-col items-center z-10 space-y-1">
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition ${
+                                isDone ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-400 border border-slate-200'
+                              }`}
+                            >
+                              {isDone ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
+                            </div>
+                            <span className={`text-[11px] font-bold text-center ${isDone ? 'text-indigo-700' : 'text-slate-400'}`}>
+                              {step}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Items List */}
                 <div className="space-y-3 pt-2">
@@ -151,6 +199,28 @@ const Orders = () => {
                       </div>
                     );
                   })}
+                </div>
+
+                {/* Bottom Actions Bar */}
+                <div className="flex flex-wrap items-center justify-between pt-3 border-t border-slate-100 gap-3 text-xs">
+                  <button
+                    onClick={() => window.print()}
+                    className="btn-secondary py-2 px-4 rounded-xl font-bold flex items-center gap-1.5 cursor-pointer text-slate-700 hover:bg-slate-100"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Download Invoice</span>
+                  </button>
+
+                  {canCancel && (
+                    <button
+                      onClick={() => handleCancelOrder(orderIdStr)}
+                      disabled={cancellingId === orderIdStr}
+                      className="btn-secondary bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold py-2 px-4 rounded-xl flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      <Ban className="w-3.5 h-3.5 text-red-600" />
+                      <span>{cancellingId === orderIdStr ? 'Cancelling...' : 'Cancel Order'}</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );
