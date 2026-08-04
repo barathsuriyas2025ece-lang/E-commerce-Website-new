@@ -142,12 +142,9 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     setToken(null);
-    setNotification('');
-    // Clear user session, cart, and wishlist data completely upon logout
+    setNotification('Signed out successfully.');
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    localStorage.removeItem('cartItems');
-    localStorage.removeItem('wishlist');
   };
 
   const adminLogin = async (password) => {

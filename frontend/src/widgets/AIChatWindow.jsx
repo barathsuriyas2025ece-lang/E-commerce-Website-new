@@ -48,7 +48,6 @@ const AIChatWindow = ({ catalogProducts = [], userOrders = [] }) => {
               <span>AI Shopping Assistant</span>
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
             </h3>
-            <p className="text-[10px] text-indigo-100">Powered by MERN & AI Action Engine</p>
           </div>
         </div>
 

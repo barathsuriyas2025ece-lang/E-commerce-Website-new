@@ -1,21 +1,33 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
+const { memoryUsers } = require('./authController');
 
 const getAdminStats = async (req, res) => {
   try {
     let dbOrders = [];
     let dbProducts = [];
-    let dbUsersCount = 0;
+    let dbUsers = [];
 
     // Fetch Real Database Data from MongoDB
     try {
       dbOrders = await Order.find({});
       dbProducts = await Product.find({});
-      dbUsersCount = await User.countDocuments({});
+      dbUsers = await User.find({}).select('-password');
     } catch (dbErr) {
       console.warn('MongoDB query for admin stats:', dbErr.message);
     }
+
+    // Merge DB users with memoryUsers (deduplicate by email)
+    const userMap = new Map();
+    (dbUsers || []).forEach((u) => userMap.set(u.email.toLowerCase(), u));
+    (memoryUsers || []).forEach((u) => {
+      if (!userMap.has(u.email.toLowerCase())) {
+        userMap.set(u.email.toLowerCase(), u);
+      }
+    });
+
+    const totalCustomersCount = userMap.size;
 
     // Calculate Real Revenue (excluding Cancelled orders)
     const validOrders = dbOrders.filter((o) => (o.orderStatus || '').toLowerCase() !== 'cancelled');
@@ -54,7 +66,7 @@ const getAdminStats = async (req, res) => {
       totalOrders: totalOrdersCount,
       pendingOrders: pendingOrdersCount,
       totalProducts: dbProducts.length,
-      totalCustomers: dbUsersCount,
+      totalCustomers: totalCustomersCount,
       lowStockAlerts: lowStockAlertsCount,
       salesData,
     };
@@ -67,7 +79,22 @@ const getAdminStats = async (req, res) => {
 
 const getAdminUsers = async (req, res) => {
   try {
-    const users = await User.find({}).select('-password');
+    let dbUsers = [];
+    try {
+      dbUsers = await User.find({}).select('-password');
+    } catch (err) {}
+
+    const userMap = new Map();
+    (dbUsers || []).forEach((u) => {
+      if (u.email) userMap.set(u.email.toLowerCase(), u);
+    });
+    (memoryUsers || []).forEach((u) => {
+      if (u.email && !userMap.has(u.email.toLowerCase())) {
+        userMap.set(u.email.toLowerCase(), u);
+      }
+    });
+
+    const users = Array.from(userMap.values());
     res.json({ success: true, users });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
