@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { adminAPI } from '../services/api';
 
 const CartContext = createContext();
 
@@ -15,12 +16,35 @@ export const CartProvider = ({ children }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [stockAlert, setStockAlert] = useState(null);
+  const [deliverySettings, setDeliverySettings] = useState({
+    isFreeDeliveryAll: true, // Default: Admin free delivery granted
+    freeShippingThreshold: 499,
+    standardShippingFee: 49,
+  });
 
   useEffect(() => {
     localStorage.setItem('cartItems', JSON.stringify(cartItems));
   }, [cartItems]);
 
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await adminAPI.getDeliverySettings();
+        if (res.data?.success && res.data?.settings) {
+          setDeliverySettings(res.data.settings);
+        }
+      } catch (err) {
+        console.error('Error loading delivery settings:', err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  // Calculate dynamic delivery fee based on Admin Settings
+  const isFreeShipping = deliverySettings.isFreeDeliveryAll || subtotal >= (deliverySettings.freeShippingThreshold || 499);
+  const shippingPrice = subtotal === 0 ? 0 : (isFreeShipping ? 0 : (deliverySettings.standardShippingFee || 49));
 
   // Logical fix: Automatically clear applied coupon if subtotal falls below minimum purchase requirement
   useEffect(() => {
@@ -118,7 +142,7 @@ export const CartProvider = ({ children }) => {
 
   const discountAmount = appliedCoupon ? Math.min((subtotal * appliedCoupon.discountPercentage) / 100, 5000) : 0;
   const tax = Math.round(subtotal * 0.05);
-  const total = Math.max(0, subtotal + tax - discountAmount);
+  const total = Math.max(0, subtotal + tax + shippingPrice - discountAmount);
 
   return (
     <CartContext.Provider
@@ -136,6 +160,10 @@ export const CartProvider = ({ children }) => {
         subtotal,
         discountAmount,
         tax,
+        shippingPrice,
+        isFreeShipping,
+        deliverySettings,
+        setDeliverySettings,
         total,
         itemCount: cartItems.reduce((acc, item) => acc + item.quantity, 0),
       }}
@@ -146,3 +174,4 @@ export const CartProvider = ({ children }) => {
 };
 
 export const useCart = () => useContext(CartContext);
+

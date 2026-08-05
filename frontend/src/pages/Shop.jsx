@@ -18,18 +18,23 @@ const Shop = () => {
   const { products, loading } = useProducts();
 
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
+  const [selectedTag, setSelectedTag] = useState(searchParams.get('tag') || '');
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [maxPrice, setMaxPrice] = useState(150000);
   const [minRating, setMinRating] = useState(0);
   const [onlyInStock, setOnlyInStock] = useState(false);
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
 
-  // Sync search URL query parameter
+  // Sync search, category, tag, & sort URL query parameters
   useEffect(() => {
     const s = searchParams.get('search');
     if (s !== null) setSearchQuery(s);
     const c = searchParams.get('category');
     if (c !== null) setSelectedCategory(c);
+    const t = searchParams.get('tag');
+    if (t !== null) setSelectedTag(t);
+    const sortParam = searchParams.get('sort');
+    if (sortParam !== null) setSortBy(sortParam);
   }, [searchParams]);
 
   let filteredProducts = (products || []).filter((p) => {
@@ -43,21 +48,28 @@ const Shop = () => {
     let matchesPrice = (p.price || 0) <= maxPrice;
     let matchesRating = (p.rating || 4.5) >= minRating;
     let matchesStock = !onlyInStock || (p.stock !== undefined ? p.stock : (p.countInStock || 10)) > 0;
-    return matchesCategory && matchesSearch && matchesPrice && matchesRating && matchesStock;
+    let matchesTag = !selectedTag || (selectedTag === 'deals'
+      ? ((p.originalPrice && p.originalPrice > p.price) || p.discount > 0 || p.onSale || p.tags?.includes('deals') || p.isFeatured)
+      : (p.tags?.includes(selectedTag) || p.category?.toLowerCase().includes(selectedTag.toLowerCase())));
+    return matchesCategory && matchesSearch && matchesPrice && matchesRating && matchesStock && matchesTag;
   });
 
   if (sortBy === 'price-low') filteredProducts.sort((a, b) => a.price - b.price);
   else if (sortBy === 'price-high') filteredProducts.sort((a, b) => b.price - a.price);
   else if (sortBy === 'rating') filteredProducts.sort((a, b) => (b.rating || 4.5) - (a.rating || 4.5));
+  else if (sortBy === 'bestseller') filteredProducts.sort((a, b) => (b.rating || 4.5) * (b.numReviews || 1) - (a.rating || 4.5) * (a.numReviews || 1));
+  else if (sortBy === 'deals') filteredProducts.sort((a, b) => ((b.originalPrice || b.price) - b.price) - ((a.originalPrice || a.price) - a.price));
 
   const handleResetFilters = () => {
     setSelectedCategory('all');
+    setSelectedTag('');
     setSearchQuery('');
     setMaxPrice(150000);
     setMinRating(0);
     setOnlyInStock(false);
     setSortBy('newest');
   };
+
 
   return (
     <div className="space-y-8 pb-20">
@@ -187,6 +199,8 @@ const Shop = () => {
                 className="bg-slate-50 border border-slate-200 text-slate-900 rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 font-bold cursor-pointer"
               >
                 <option value="newest">Newest Arrivals</option>
+                <option value="bestseller">🏆 Best Sellers</option>
+                <option value="deals">⚡ Today's Deals & Discounts</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
                 <option value="rating">Top Rated</option>

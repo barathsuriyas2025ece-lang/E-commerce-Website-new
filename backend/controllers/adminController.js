@@ -103,4 +103,27 @@ const getAdminUsers = async (req, res) => {
   }
 };
 
-module.exports = { getAdminStats, getAdminUsers };
+let deliverySettings = {
+  isFreeDeliveryAll: true,
+  freeShippingThreshold: 499,
+  standardShippingFee: 49,
+};
+
+const getDeliverySettings = async (req, res) => {
+  res.json({ success: true, settings: deliverySettings });
+};
+
+const updateDeliverySettings = async (req, res) => {
+  try {
+    const { isFreeDeliveryAll, freeShippingThreshold, standardShippingFee } = req.body;
+    if (typeof isFreeDeliveryAll === 'boolean') deliverySettings.isFreeDeliveryAll = isFreeDeliveryAll;
+    if (typeof freeShippingThreshold === 'number') deliverySettings.freeShippingThreshold = Number(freeShippingThreshold);
+    if (typeof standardShippingFee === 'number') deliverySettings.standardShippingFee = Number(standardShippingFee);
+    res.json({ success: true, message: 'Delivery policy updated successfully by Admin!', settings: deliverySettings });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+module.exports = { getAdminStats, getAdminUsers, getDeliverySettings, updateDeliverySettings };
+

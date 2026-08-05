@@ -520,6 +520,22 @@ export const adminAPI = {
       return { data: { success: true, users: [] } };
     }
   },
+  getDeliverySettings: async () => {
+    try {
+      return await api.get('/admin/delivery-settings');
+    } catch (err) {
+      return { data: { success: true, settings: { isFreeDeliveryAll: true, freeShippingThreshold: 499, standardShippingFee: 49 } } };
+    }
+  },
+  updateDeliverySettings: async (settings) => {
+    try {
+      return await api.post('/admin/delivery-settings', settings);
+    } catch (err) {
+      if (err.response && err.response.data) return err.response;
+      throw new Error(err?.response?.data?.message || err.message || 'Failed to update delivery settings');
+    }
+  },
 };
 
 export default api;
+

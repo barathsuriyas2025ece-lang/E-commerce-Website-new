@@ -33,9 +33,26 @@ const Home = () => {
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
 
   const safeProducts = products || [];
-  const dealsProducts = safeProducts.filter((p) => p.originalPrice > p.price).slice(0, 4);
+  let dealsProducts = safeProducts.filter(
+    (p) => (p.originalPrice && p.originalPrice > p.price) || p.discount > 0 || p.onSale || p.tags?.includes('deals')
+  );
+  if (dealsProducts.length === 0) {
+    dealsProducts = safeProducts.slice(0, 4);
+  } else {
+    dealsProducts = dealsProducts.slice(0, 4);
+  }
+
   const trendingProducts = safeProducts.slice(0, 4);
-  const bestSellers = safeProducts.filter((p) => p.isFeatured || true).slice(2, 6);
+
+  let bestSellers = safeProducts.filter(
+    (p) => p.isFeatured || p.isBestseller || (p.rating && p.rating >= 4.5) || (p.numReviews && p.numReviews >= 20)
+  );
+  if (bestSellers.length === 0) {
+    bestSellers = safeProducts.slice(0, 4);
+  } else {
+    bestSellers = bestSellers.slice(0, 4);
+  }
+
 
   return (
     <div className="space-y-12 pb-16">

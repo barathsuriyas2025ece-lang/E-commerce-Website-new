@@ -3,16 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { X, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Truck, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
-const FREE_SHIPPING_THRESHOLD = 999;
-
 const CartDrawer = () => {
-  const { cartItems, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, subtotal } = useCart();
+  const { cartItems, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, subtotal, deliverySettings } = useCart();
   const navigate = useNavigate();
 
   if (!isCartOpen) return null;
 
+  const FREE_SHIPPING_THRESHOLD = deliverySettings?.isFreeDeliveryAll ? 0 : (deliverySettings?.freeShippingThreshold || 499);
   const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
-  const shippingProgress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
+  const shippingProgress = FREE_SHIPPING_THRESHOLD === 0 ? 100 : Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
+
 
   return (
     <div

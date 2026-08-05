@@ -7,7 +7,7 @@ import { useProducts } from '../context/ProductContext';
 import { orderAPI } from '../services/api';
 
 const Checkout = () => {
-  const { cartItems, subtotal, tax, discountAmount, total, clearCart } = useCart();
+  const { cartItems, subtotal, tax, discountAmount, shippingPrice, total, clearCart } = useCart();
   const { user } = useAuth();
   const { deductStock } = useProducts();
   const navigate = useNavigate();
@@ -466,7 +466,11 @@ const Checkout = () => {
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>Express Shipping</span>
-                <span className="font-bold text-emerald-600 uppercase">FREE</span>
+                {shippingPrice === 0 ? (
+                  <span className="font-bold text-emerald-600 uppercase">FREE</span>
+                ) : (
+                  <span className="font-bold text-slate-900">₹{shippingPrice.toLocaleString()}</span>
+                )}
               </div>
 
               <div className="border-t border-slate-200 pt-3 flex justify-between items-baseline text-slate-900">

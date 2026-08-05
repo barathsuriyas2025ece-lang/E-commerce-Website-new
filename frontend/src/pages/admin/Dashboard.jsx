@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Package, Users, AlertTriangle, TrendingUp, Shield, Plus, ArrowRight, IndianRupee } from 'lucide-react';
+import { ShoppingBag, Package, Users, AlertTriangle, TrendingUp, Shield, Plus, ArrowRight, IndianRupee, Truck } from 'lucide-react';
 import { adminAPI, orderAPI } from '../../services/api';
 import { useProducts } from '../../context/ProductContext';
+import { useCart } from '../../context/CartContext';
+
 
 const Dashboard = () => {
   const { products } = useProducts();
@@ -236,8 +238,133 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* 🚚 Admin Free Delivery & Shipping Policy Controller */}
+      <AdminDeliveryControl />
+    </div>
+  );
+};
+
+// Sub-component: Admin Delivery Controls
+const AdminDeliveryControl = () => {
+  const { deliverySettings, setDeliverySettings } = useCart();
+  const [isFreeAll, setIsFreeAll] = useState(deliverySettings?.isFreeDeliveryAll ?? true);
+  const [minThreshold, setMinThreshold] = useState(deliverySettings?.freeShippingThreshold ?? 499);
+  const [fee, setFee] = useState(deliverySettings?.standardShippingFee ?? 49);
+  const [saveNotice, setSaveNotice] = useState('');
+
+  useEffect(() => {
+    if (deliverySettings) {
+      setIsFreeAll(deliverySettings.isFreeDeliveryAll);
+      setMinThreshold(deliverySettings.freeShippingThreshold);
+      setFee(deliverySettings.standardShippingFee);
+    }
+  }, [deliverySettings]);
+
+  const handleSaveDeliveryPolicy = async (e) => {
+    e.preventDefault();
+    try {
+      const updated = {
+        isFreeDeliveryAll: Boolean(isFreeAll),
+        freeShippingThreshold: Number(minThreshold),
+        standardShippingFee: Number(fee),
+      };
+      const res = await adminAPI.updateDeliverySettings(updated);
+      if (res.data?.success) {
+        setDeliverySettings(updated);
+        setSaveNotice('✅ Delivery policy updated and applied store-wide across all customer carts!');
+        setTimeout(() => setSaveNotice(''), 4000);
+      }
+    } catch (err) {
+      setSaveNotice('❌ Error saving delivery settings: ' + (err.message || 'Unknown error'));
+      setTimeout(() => setSaveNotice(''), 4000);
+    }
+  };
+
+  return (
+    <div className="glass-panel p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-5">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Truck className="w-5 h-5 text-indigo-600" />
+          <div>
+            <h2 className="text-lg font-extrabold text-slate-900">Admin Store Shipping & Delivery Settings</h2>
+            <p className="text-xs text-slate-500">Manage free delivery eligibility, thresholds, and shipping charges</p>
+          </div>
+        </div>
+        <span className={`text-xs font-extrabold px-3 py-1 rounded-full ${isFreeAll ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-indigo-100 text-indigo-800 border border-indigo-300'}`}>
+          {isFreeAll ? '🟢 Free Delivery for ALL Orders Enabled' : `📦 Free Shipping for Orders > ₹${minThreshold}`}
+        </span>
+      </div>
+
+      {saveNotice && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold animate-fadeIn">
+          {saveNotice}
+        </div>
+      )}
+
+      <form onSubmit={handleSaveDeliveryPolicy} className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs">
+        {/* Toggle Free Shipping for All Orders */}
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+          <label className="font-extrabold text-slate-800 block">Free Delivery Mode</label>
+          <div className="flex items-center gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => setIsFreeAll(true)}
+              className={`flex-1 py-2 px-3 rounded-xl font-black text-xs transition cursor-pointer ${isFreeAll ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-slate-700 border border-slate-200'}`}
+            >
+              FREE for ALL
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsFreeAll(false)}
+              className={`flex-1 py-2 px-3 rounded-xl font-black text-xs transition cursor-pointer ${!isFreeAll ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-700 border border-slate-200'}`}
+            >
+              Min. Order
+            </button>
+          </div>
+          <p className="text-[11px] text-slate-500 pt-1">
+            {isFreeAll ? 'Admin grants 100% Free Shipping on every order.' : 'Customers get free shipping when cart total exceeds threshold.'}
+          </p>
+        </div>
+
+        {/* Free Shipping Minimum Threshold */}
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+          <label className="font-extrabold text-slate-800 block">Free Shipping Threshold (₹)</label>
+          <input
+            type="number"
+            disabled={isFreeAll}
+            value={minThreshold}
+            onChange={(e) => setMinThreshold(e.target.value)}
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+          />
+          <p className="text-[11px] text-slate-500">Minimum subtotal required to qualify for Free Shipping.</p>
+        </div>
+
+        {/* Standard Shipping Fee */}
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+          <label className="font-extrabold text-slate-800 block">Standard Shipping Charge (₹)</label>
+          <input
+            type="number"
+            disabled={isFreeAll}
+            value={fee}
+            onChange={(e) => setFee(e.target.value)}
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-bold focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+          />
+          <p className="text-[11px] text-slate-500">Shipping charge applied when order is below threshold.</p>
+        </div>
+
+        <div className="sm:col-span-3 flex justify-end">
+          <button
+            type="submit"
+            className="btn-primary bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-2.5 px-6 rounded-xl text-xs shadow-md transition cursor-pointer"
+          >
+            Save Delivery Policy Settings
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
 
 export default Dashboard;
+

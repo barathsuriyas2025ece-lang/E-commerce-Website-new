@@ -6,11 +6,12 @@ import { useAI } from '../context/AIContext';
 import { couponAPI } from '../services/api';
 
 const Cart = () => {
-  const { cartItems, updateQuantity, removeFromCart, subtotal, tax, discountAmount, total, appliedCoupon, setAppliedCoupon } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, subtotal, tax, shippingPrice, discountAmount, total, appliedCoupon, setAppliedCoupon } = useCart();
   const { setIsAiOpen, sendMessage } = useAI();
   const [couponCode, setCouponCode] = useState('');
   const [couponMsg, setCouponMsg] = useState('');
   const navigate = useNavigate();
+
 
   const handleApplyCoupon = async (e) => {
     e.preventDefault();
@@ -122,6 +123,12 @@ const Cart = () => {
                 <span>-₹{discountAmount.toLocaleString()}</span>
               </div>
             )}
+            <div className="flex justify-between text-slate-600 font-medium">
+              <span>Express Delivery:</span>
+              <span className={shippingPrice === 0 ? 'text-emerald-600 font-extrabold uppercase' : 'font-bold text-slate-900'}>
+                {shippingPrice === 0 ? 'FREE' : `₹${shippingPrice}`}
+              </span>
+            </div>
             <div className="flex justify-between text-slate-600 font-medium"><span>Estimated Tax (5%):</span><span>₹{tax.toLocaleString()}</span></div>
             <div className="flex justify-between text-slate-900 font-extrabold text-base pt-3 border-t border-slate-100">
               <span>Total:</span>
