@@ -14,7 +14,7 @@ const categoriesList = [
 ];
 
 const Shop = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { products, loading } = useProducts();
 
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
@@ -25,40 +25,58 @@ const Shop = () => {
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
 
-  // Sync search, category, tag, & sort URL query parameters
+  // Always sync URL query parameters cleanly with component state (handling nulls on re-clicks)
   useEffect(() => {
-    const s = searchParams.get('search');
-    if (s !== null) setSearchQuery(s);
-    const c = searchParams.get('category');
-    if (c !== null) setSelectedCategory(c);
-    const t = searchParams.get('tag');
-    if (t !== null) setSelectedTag(t);
-    const sortParam = searchParams.get('sort');
-    if (sortParam !== null) setSortBy(sortParam);
+    const s = searchParams.get('search') || '';
+    const c = searchParams.get('category') || 'all';
+    const t = searchParams.get('tag') || '';
+    const sortParam = searchParams.get('sort') || 'newest';
+
+    setSearchQuery(s);
+    setSelectedCategory(c);
+    setSelectedTag(t);
+    setSortBy(sortParam);
   }, [searchParams]);
 
   let filteredProducts = (products || []).filter((p) => {
-    let matchesCategory = selectedCategory === 'all' || p.category?.toLowerCase().includes(selectedCategory.toLowerCase());
+    let matchesCategory =
+      selectedCategory === 'all' ||
+      !selectedCategory ||
+      p.category?.toLowerCase().includes(selectedCategory.toLowerCase());
+
     let matchesSearch =
       !searchQuery ||
       p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
     let matchesPrice = (p.price || 0) <= maxPrice;
     let matchesRating = (p.rating || 4.5) >= minRating;
     let matchesStock = !onlyInStock || (p.stock !== undefined ? p.stock : (p.countInStock || 10)) > 0;
-    let matchesTag = !selectedTag || (selectedTag === 'deals'
-      ? ((p.originalPrice && p.originalPrice > p.price) || p.discount > 0 || p.onSale || p.tags?.includes('deals') || p.isFeatured)
-      : (p.tags?.includes(selectedTag) || p.category?.toLowerCase().includes(selectedTag.toLowerCase())));
+    let matchesTag =
+      !selectedTag ||
+      (selectedTag === 'deals' || selectedTag === 'flash'
+        ? (p.originalPrice && p.originalPrice > p.price) || (p.discount && p.discount > 0) || p.onSale || p.tags?.includes('deals') || p.isFeatured
+        : p.tags?.includes(selectedTag) || p.category?.toLowerCase().includes(selectedTag.toLowerCase()));
+
     return matchesCategory && matchesSearch && matchesPrice && matchesRating && matchesStock && matchesTag;
   });
 
+  // Dynamic Sorting
   if (sortBy === 'price-low') filteredProducts.sort((a, b) => a.price - b.price);
   else if (sortBy === 'price-high') filteredProducts.sort((a, b) => b.price - a.price);
   else if (sortBy === 'rating') filteredProducts.sort((a, b) => (b.rating || 4.5) - (a.rating || 4.5));
   else if (sortBy === 'bestseller') filteredProducts.sort((a, b) => (b.rating || 4.5) * (b.numReviews || 1) - (a.rating || 4.5) * (a.numReviews || 1));
   else if (sortBy === 'deals') filteredProducts.sort((a, b) => ((b.originalPrice || b.price) - b.price) - ((a.originalPrice || a.price) - a.price));
+
+  // Guaranteed fallback: If strict filtering returns empty for deals/bestsellers, show all items
+  if (filteredProducts.length === 0 && (selectedTag === 'deals' || sortBy === 'bestseller') && (products || []).length > 0) {
+    filteredProducts = (products || []).slice();
+    if (sortBy === 'bestseller') {
+      filteredProducts.sort((a, b) => (b.rating || 4.5) - (a.rating || 4.5));
+    }
+  }
 
   const handleResetFilters = () => {
     setSelectedCategory('all');
@@ -68,7 +86,9 @@ const Shop = () => {
     setMinRating(0);
     setOnlyInStock(false);
     setSortBy('newest');
+    setSearchParams({});
   };
+
 
 
   return (
@@ -119,7 +139,11 @@ const Shop = () => {
               {categoriesList.map((cat) => (
                 <button
                   key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
+                  onClick={() => {
+                    setSelectedCategory(cat.id);
+                    setSelectedTag('');
+                    setSearchParams(cat.id === 'all' ? {} : { category: cat.id });
+                  }}
                   className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
                     selectedCategory === cat.id ? 'bg-indigo-600 text-white font-extrabold shadow-sm' : 'text-slate-600 hover:bg-slate-100'
                   }`}
