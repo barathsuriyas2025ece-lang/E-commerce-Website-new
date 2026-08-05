@@ -520,6 +520,21 @@ export const adminAPI = {
       return { data: { success: true, users: [] } };
     }
   },
+  createAdmin: async (adminData) => {
+    try {
+      return await api.post('/admin/create-admin', adminData);
+    } catch (err) {
+      if (err.response && err.response.data) return err.response;
+      throw new Error(err?.response?.data?.message || err.message || 'Failed to create admin user');
+    }
+  },
+  getAuditLogs: async (params = {}) => {
+    try {
+      return await api.get('/admin/audit-logs', { params });
+    } catch (err) {
+      return { data: { success: true, data: [] } };
+    }
+  },
   getDeliverySettings: async () => {
     try {
       return await api.get('/admin/delivery-settings');

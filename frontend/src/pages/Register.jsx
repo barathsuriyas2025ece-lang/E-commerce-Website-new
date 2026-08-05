@@ -12,7 +12,6 @@ const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('customer');
   const [error, setError] = useState('');
   const [successNotice, setSuccessNotice] = useState('');
 
@@ -32,20 +31,16 @@ const Register = () => {
       return;
     }
 
-    if (password.length < 5) {
-      setError('Password must be at least 5 characters long');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
       return;
     }
 
-    const res = await register(cleanName, cleanEmail, password, role);
+    const res = await register(cleanName, cleanEmail, password, 'customer');
     if (res.success) {
       setSuccessNotice(`🎉 Welcome ${cleanName}! Account created and confirmation email sent to ${cleanEmail}`);
       setTimeout(() => {
-        if (role === 'admin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/');
-        }
+        navigate('/');
       }, 800);
     } else {
       setError(res.message || 'Registration failed');
@@ -113,18 +108,6 @@ const Register = () => {
               placeholder="••••••••"
               className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 mt-1 text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
             />
-          </div>
-
-          <div>
-            <label className="text-slate-700 font-bold">Account Role</label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 mt-1 text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
-            >
-              <option value="customer">Customer</option>
-              <option value="admin">Admin Manager</option>
-            </select>
           </div>
 
           <button type="submit" disabled={loading} className="btn-primary bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold w-full justify-center text-sm py-2.5 rounded-xl inline-flex items-center gap-2 shadow-sm transition-all cursor-pointer">

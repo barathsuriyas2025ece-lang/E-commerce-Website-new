@@ -51,14 +51,14 @@ export const AuthProvider = ({ children }) => {
     };
   };
 
-  const register = async (name, email, password, role) => {
+  const register = async (name, email, password, role = 'customer') => {
     setLoading(true);
     setNotification('');
     const cleanEmail = (email || '').trim().toLowerCase();
     const cleanName = (name || '').trim();
 
     try {
-      const res = await authAPI.register({ name: cleanName, email: cleanEmail, password, role });
+      const res = await authAPI.register({ name: cleanName, email: cleanEmail, password, role: 'customer' });
       if (res.data && res.data.success) {
         setUser(res.data.user);
         setToken(res.data.token);
@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }) => {
       _id: 'user_' + Date.now(),
       name: cleanName,
       email: cleanEmail,
-      role: role === 'admin' ? 'admin' : 'customer',
+      role: 'customer',
       loyaltyPoints: 100,
     };
     const newToken = 'user_jwt_token_' + Date.now();

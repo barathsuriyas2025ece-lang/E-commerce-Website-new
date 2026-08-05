@@ -60,29 +60,35 @@ const { ensureConnectedDB } = require('../config/db');
 
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Please fill in all required fields' });
     }
 
-    const cleanEmail = sanitizeInput(email).toLowerCase();
+    const cleanEmail = sanitizeInput(email).trim().toLowerCase();
     const cleanName = sanitizeInput(name);
 
     if (!validateEmailFormat(cleanEmail)) {
       return res.status(400).json({ success: false, message: 'Please provide a valid email address format (e.g. name@example.com)' });
     }
 
-    if (password.length < 5) {
-      return res.status(400).json({ success: false, message: 'Password must be at least 5 characters long' });
+    if (password.length < 8) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long' });
     }
 
     // Ensure MongoDB connection is active
     await ensureConnectedDB();
 
+    // Check memory store duplicate
+    const memoryExists = memoryUsers.some((u) => u.email && u.email.toLowerCase() === cleanEmail);
+    if (memoryExists) {
+      return res.status(409).json({ success: false, message: 'An account with this email address already exists. Please sign in.' });
+    }
+
     try {
       const existingUser = await User.findOne({ email: cleanEmail });
       if (existingUser) {
-        return res.status(400).json({ success: false, message: 'An account with this email address already exists. Please sign in.' });
+        return res.status(409).json({ success: false, message: 'An account with this email address already exists. Please sign in.' });
       }
 
       const salt = await bcrypt.genSalt(10);
@@ -92,7 +98,7 @@ const registerUser = async (req, res) => {
         name: cleanName,
         email: cleanEmail,
         password: hashedPassword,
-        role: role === 'admin' && cleanEmail === ADMIN_EMAIL ? 'admin' : 'customer',
+        role: 'customer',
       });
 
       // Mirror registered user in memory array for speed
@@ -110,10 +116,14 @@ const registerUser = async (req, res) => {
       const token = generateToken(user);
       triggerAsyncWelcomeEmail(cleanName, cleanEmail);
 
+      const userObj = { id: user._id, _id: user._id, name: user.name, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints };
+
       return res.status(201).json({
         success: true,
+        message: 'Account created successfully',
         token,
-        user: { id: user._id, _id: user._id, name: user.name, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints },
+        data: userObj,
+        user: userObj,
       });
     } catch (dbErr) {
       console.error('[DB WRITE FAILED] registerUser:', dbErr.message);
@@ -127,7 +137,7 @@ const registerUser = async (req, res) => {
         name: cleanName,
         email: cleanEmail,
         password: hashedPassword,
-        role: cleanEmail === ADMIN_EMAIL ? 'admin' : 'customer',
+        role: 'customer',
         loyaltyPoints: 100,
         createdAt: new Date(),
       };
@@ -137,12 +147,15 @@ const registerUser = async (req, res) => {
       const token = generateToken(newUser);
       triggerAsyncWelcomeEmail(cleanName, cleanEmail);
 
+      const userObj = { id: newUser._id, _id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, loyaltyPoints: newUser.loyaltyPoints };
+
       return res.status(201).json({
         success: true,
         dbWriteFailed: true,
         message: 'Saved temporarily in memory — database write failed.',
         token,
-        user: { id: newUser._id, _id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, loyaltyPoints: newUser.loyaltyPoints },
+        data: userObj,
+        user: userObj,
       });
     }
   } catch (error) {
