@@ -1,11 +1,27 @@
 import axios from 'axios';
 
-const getApiBase = () => {
-  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
-  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    return 'http://localhost:5000/api';
+const normalizeApiUrl = (urlStr) => {
+  if (!urlStr) return '';
+  let cleaned = String(urlStr).trim().replace(/\/+$/, '');
+  if (!cleaned.endsWith('/api')) {
+    cleaned += '/api';
   }
-  return 'https://e-commerce-website-new-l3fa.onrender.com/api';
+  return cleaned;
+};
+
+const getApiBase = () => {
+  let rawUrl = '';
+  if (import.meta.env.VITE_API_URL) {
+    rawUrl = import.meta.env.VITE_API_URL;
+  } else if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    rawUrl = 'http://localhost:5000';
+  } else {
+    rawUrl = 'https://e-commerce-website-new-l3fa.onrender.com';
+  }
+
+  const resolvedUrl = normalizeApiUrl(rawUrl);
+  console.log(`🚀 [NexusMart API] Resolved API Base URL: ${resolvedUrl}`);
+  return resolvedUrl;
 };
 
 const API_BASE = getApiBase();
