@@ -1,13 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Tag, Package, Sparkles, ShoppingCart, CheckCheck, Trash2 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 
 const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
   const { notifications, unreadCount, markAllAsRead, clearNotification, hasUnreadPulse } = useNotifications();
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isOpen]);
+
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => {
           setIsOpen((prev) => !prev);

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Package, Tag, Sparkles, ShoppingCart, CheckCircle2, BellRing, Info } from 'lucide-react';
 
 const NotificationContext = createContext();
@@ -19,7 +19,26 @@ export const NotificationProvider = ({ children }) => {
   });
 
   const [activeToast, setActiveToast] = useState(null);
+  const toastRef = useRef(null);
   const [hasUnreadPulse, setHasUnreadPulse] = useState(() => notifications.some((n) => !n.read));
+
+  useEffect(() => {
+    const handleClickOutsideToast = (event) => {
+      if (toastRef.current && !toastRef.current.contains(event.target)) {
+        setActiveToast(null);
+      }
+    };
+
+    if (activeToast) {
+      document.addEventListener('mousedown', handleClickOutsideToast);
+      document.addEventListener('touchstart', handleClickOutsideToast);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutsideToast);
+      document.removeEventListener('touchstart', handleClickOutsideToast);
+    };
+  }, [activeToast]);
 
   useEffect(() => {
     try {
@@ -79,7 +98,7 @@ export const NotificationProvider = ({ children }) => {
 
       {/* 🌟 Simple, Professional Floating Real-Time Toast */}
       {activeToast && (
-        <div className="fixed bottom-5 right-5 z-50 max-w-sm w-full bg-white border border-slate-200 text-slate-900 p-4 rounded-2xl shadow-2xl animate-slide-up flex items-start gap-3 border-l-4 border-l-indigo-600">
+        <div ref={toastRef} className="fixed bottom-5 right-5 z-50 max-w-sm w-full bg-white border border-slate-200 text-slate-900 p-4 rounded-2xl shadow-2xl animate-slide-up flex items-start gap-3 border-l-4 border-l-indigo-600">
           <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5 font-bold">
             {activeToast.iconType === 'package' ? (
               <Package className="w-4 h-4" />
