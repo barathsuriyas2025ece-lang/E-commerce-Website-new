@@ -18,7 +18,7 @@ const processAIQuery = async (req, res) => {
         availableProducts = dbProducts.map((p) => p.toObject());
       }
     } catch (err) {
-      console.warn('Database query fallback in AI controller:', err.message);
+      console.error('[DB READ FAILED] processAIQuery:', err.message);
     }
 
     // Combine request products, database products, and sample products

@@ -114,16 +114,16 @@ const createOrder = async (req, res) => {
       const created = await Order.create(orderDoc);
       return res.status(201).json({ success: true, order: created });
     } catch (err) {
-      console.error('[ENDPOINT ERROR]', {
-        endpoint: req.originalUrl,
-        user: userId,
-        error: err.message,
-        stack: err.stack,
-      });
+      console.error('[DB WRITE FAILED] createOrder:', err.message);
 
       const fallbackOrder = { _id: 'ord_' + Date.now(), ...orderDoc, createdAt: new Date() };
       memoryOrders.unshift(fallbackOrder);
-      return res.status(201).json({ success: true, order: fallbackOrder });
+      return res.status(201).json({
+        success: true,
+        dbWriteFailed: true,
+        message: 'Order created temporarily in memory — database write failed.',
+        order: fallbackOrder,
+      });
     }
   } catch (error) {
     console.error('[ENDPOINT ERROR]', {
@@ -144,7 +144,7 @@ const getMyOrders = async (req, res) => {
         const orders = await Order.find({ user: rawUserId }).sort({ createdAt: -1 });
         if (orders && orders.length > 0) return res.json({ success: true, orders });
       } catch (err) {
-        console.error('[ENDPOINT ERROR]', { endpoint: req.originalUrl, user: rawUserId, error: err.message, stack: err.stack });
+        console.error('[DB READ FAILED] getMyOrders:', err.message);
       }
     }
 
@@ -160,7 +160,7 @@ const getAllOrders = async (req, res) => {
       const orders = await Order.find().populate('user', 'name email').sort({ createdAt: -1 });
       if (orders && orders.length > 0) return res.json({ success: true, orders });
     } catch (err) {
-      console.error('[ENDPOINT ERROR]', { endpoint: req.originalUrl, user: req.user?.id, error: err.message, stack: err.stack });
+      console.error('[DB READ FAILED] getAllOrders:', err.message);
     }
 
     res.json({ success: true, orders: memoryOrders });
@@ -183,7 +183,7 @@ const updateOrderStatus = async (req, res) => {
         );
         if (updated) return res.json({ success: true, order: updated });
       } catch (err) {
-        console.error('[ENDPOINT ERROR]', { endpoint: req.originalUrl, user: req.user?.id, error: err.message, stack: err.stack });
+        console.error('[DB WRITE FAILED] updateOrderStatus:', err.message);
       }
     }
 
@@ -192,7 +192,12 @@ const updateOrderStatus = async (req, res) => {
       memoryOrders[index].orderStatus = orderStatus || memoryOrders[index].orderStatus;
       if (courierName) memoryOrders[index].courierName = courierName;
       if (trackingNumber) memoryOrders[index].trackingNumber = trackingNumber;
-      return res.json({ success: true, order: memoryOrders[index] });
+      return res.json({
+        success: true,
+        dbWriteFailed: true,
+        message: 'Order status updated in memory — database write failed',
+        order: memoryOrders[index],
+      });
     }
 
     res.status(404).json({ success: false, message: 'Order not found' });
@@ -224,7 +229,7 @@ const cancelOrder = async (req, res) => {
           return res.json({ success: true, message: 'Order cancelled successfully and inventory stock restored', order });
         }
       } catch (dbErr) {
-        console.error('[ENDPOINT ERROR]', { endpoint: req.originalUrl, user: req.user?.id, error: dbErr.message, stack: dbErr.stack });
+        console.error('[DB WRITE FAILED] cancelOrder:', dbErr.message);
       }
     }
 
@@ -234,7 +239,12 @@ const cancelOrder = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Order cannot be cancelled after shipping' });
       }
       order.orderStatus = 'Cancelled';
-      return res.json({ success: true, message: 'Order cancelled successfully', order });
+      return res.json({
+        success: true,
+        dbWriteFailed: true,
+        message: 'Order cancelled in memory — database write failed',
+        order,
+      });
     }
 
     res.status(404).json({ success: false, message: 'Order not found' });

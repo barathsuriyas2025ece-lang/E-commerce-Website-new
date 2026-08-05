@@ -112,7 +112,8 @@ const connectDB = async () => {
       return true;
     } catch (localErr) {
       console.error(`❌ Local MongoDB Connection Error: ${localErr.message}`);
-      console.log('🚀 Defaulting to Intelligent In-Memory Storage Mode for seamless operation.');
+      console.error(`🚨 CRITICAL DATABASE WARNING: Failed to connect to MongoDB Atlas AND Local MongoDB!`);
+      console.error(`⚠️ SERVER IS RUNNING IN IN-MEMORY FALLBACK MODE — DATA (USERS, PRODUCTS, ORDERS) WILL NOT BE PERSISTED TO MONGODB ATLAS!`);
       isFallbackMode = true;
       return false;
     }

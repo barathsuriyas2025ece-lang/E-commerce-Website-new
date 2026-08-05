@@ -196,10 +196,10 @@ const createProduct = async (req, res) => {
       const created = await Product.create(productData);
       return res.status(201).json({ success: true, product: created });
     } catch (err) {
-      console.error('MongoDB Product create warning:', err.message);
+      console.error('[DB WRITE FAILED] createProduct:', err.message);
       const newProd = { _id: new mongoose.Types.ObjectId().toString(), ...productData, createdAt: new Date() };
       memoryProducts.unshift(newProd);
-      return res.status(201).json({ success: true, product: newProd });
+      return res.status(201).json({ success: true, dbWriteFailed: true, message: 'Saved temporarily in memory — database write failed.', product: newProd });
     }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -212,25 +212,22 @@ const updateProduct = async (req, res) => {
     const updateData = { ...req.body };
     delete updateData._id;
 
+    let dbWriteFailed = false;
     if (mongoose.Types.ObjectId.isValid(id)) {
       try {
         const updateOptions = { new: true, runValidators: true };
         const updated = await Product.findByIdAndUpdate(id, updateData, updateOptions);
         if (updated) return res.json({ success: true, product: updated });
       } catch (err) {
-        console.error('[ENDPOINT ERROR]', {
-          endpoint: req.originalUrl,
-          user: req.user?.id,
-          error: err.message,
-          stack: err.stack,
-        });
+        dbWriteFailed = true;
+        console.error('[DB WRITE FAILED] updateProduct:', err.message);
       }
     }
 
     const index = memoryProducts.findIndex((p) => (p._id || p.id || '').toString() === id.toString());
     if (index !== -1) {
       memoryProducts[index] = { ...memoryProducts[index], ...updateData };
-      return res.json({ success: true, product: memoryProducts[index] });
+      return res.json({ success: true, dbWriteFailed: true, message: 'Saved temporarily in memory — database write failed', product: memoryProducts[index] });
     }
 
     res.status(404).json({ success: false, message: 'Product not found' });
@@ -248,21 +245,22 @@ const updateProduct = async (req, res) => {
 const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
+    let dbDeleted = false;
     if (mongoose.Types.ObjectId.isValid(id)) {
       try {
-        await Product.findByIdAndDelete(id);
+        const deleted = await Product.findByIdAndDelete(id);
+        if (deleted) dbDeleted = true;
       } catch (err) {
-        console.error('[ENDPOINT ERROR]', {
-          endpoint: req.originalUrl,
-          user: req.user?.id,
-          error: err.message,
-          stack: err.stack,
-        });
+        console.error('[DB WRITE FAILED] deleteProduct:', err.message);
       }
     }
 
     memoryProducts = memoryProducts.filter((p) => (p._id || p.id || '').toString() !== id.toString());
-    res.json({ success: true, message: 'Product removed successfully' });
+    res.json({
+      success: true,
+      message: 'Product removed successfully',
+      ...(!dbDeleted ? { dbWriteFailed: true, message: 'Product removed from memory — database write failed' } : {}),
+    });
   } catch (error) {
     console.error('[ENDPOINT ERROR]', {
       endpoint: req.originalUrl,
@@ -340,7 +338,9 @@ const createProductReview = async (req, res) => {
 
         return res.status(201).json({ success: true, message: 'Review added successfully', product });
       }
-    } catch (dbErr) {}
+    } catch (dbErr) {
+      console.error('[DB WRITE FAILED] createProductReview:', dbErr.message);
+    }
 
     const product = memoryProducts.find((p) => (p._id || p.id).toString() === productId.toString());
     if (product) {
@@ -372,7 +372,7 @@ const createProductReview = async (req, res) => {
         (product.reviews.reduce((acc, item) => item.rating + acc, 0) / product.reviews.length).toFixed(1)
       );
 
-      return res.status(201).json({ success: true, message: 'Review saved successfully', product });
+      return res.status(201).json({ success: true, dbWriteFailed: true, message: 'Review saved temporarily in memory — database write failed', product });
     }
 
     res.status(404).json({ success: false, message: 'Product not found' });

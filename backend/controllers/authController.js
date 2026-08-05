@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
@@ -115,7 +116,7 @@ const registerUser = async (req, res) => {
         user: { id: user._id, _id: user._id, name: user.name, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints },
       });
     } catch (dbErr) {
-      console.error('[DATABASE REGISTER ERROR]', dbErr.message);
+      console.error('[DB WRITE FAILED] registerUser:', dbErr.message);
 
       // Fallback in-memory registration if DB is completely unreachable
       const salt = await bcrypt.genSalt(10);
@@ -138,6 +139,8 @@ const registerUser = async (req, res) => {
 
       return res.status(201).json({
         success: true,
+        dbWriteFailed: true,
+        message: 'Saved temporarily in memory — database write failed.',
         token,
         user: { id: newUser._id, _id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role, loyaltyPoints: newUser.loyaltyPoints },
       });
@@ -277,6 +280,7 @@ const updateProfile = async (req, res) => {
 
     // 2. Perform MongoDB Update
     let updatedUser = null;
+    let dbWriteFailed = false;
     try {
       if (mongoose.Types.ObjectId.isValid(userId)) {
         updatedUser = await User.findByIdAndUpdate(
@@ -290,13 +294,10 @@ const updateProfile = async (req, res) => {
           { new: true, runValidators: true }
         ).select('-password');
       }
+      if (!updatedUser) dbWriteFailed = true;
     } catch (dbErr) {
-      console.error('[ENDPOINT ERROR]', {
-        endpoint: req.originalUrl,
-        user: userId,
-        error: dbErr.message,
-        stack: dbErr.stack,
-      });
+      dbWriteFailed = true;
+      console.error('[DB WRITE FAILED] updateProfile:', dbErr.message);
     }
 
     // 3. Fallback / Sync Memory User
@@ -328,7 +329,7 @@ const updateProfile = async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'Profile details updated successfully',
+      ...(dbWriteFailed ? { dbWriteFailed: true, message: 'Saved temporarily in memory — database write failed' } : { message: 'Profile details updated successfully' }),
       user: {
         id: updatedUser._id,
         _id: updatedUser._id,
@@ -370,6 +371,7 @@ const updateVipStatus = async (req, res) => {
     const vipExpiryDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toLocaleDateString();
 
     let updatedUser = null;
+    let dbWriteFailed = false;
     try {
       if (mongoose.Types.ObjectId.isValid(userId)) {
         updatedUser = await User.findByIdAndUpdate(
@@ -382,13 +384,10 @@ const updateVipStatus = async (req, res) => {
           { new: true, runValidators: true }
         ).select('-password');
       }
+      if (!updatedUser) dbWriteFailed = true;
     } catch (dbErr) {
-      console.error('[ENDPOINT ERROR]', {
-        endpoint: req.originalUrl,
-        user: userId,
-        error: dbErr.message,
-        stack: dbErr.stack,
-      });
+      dbWriteFailed = true;
+      console.error('[DB WRITE FAILED] updateVipStatus:', dbErr.message);
     }
 
     const memIdx = memoryUsers.findIndex((u) => (u._id || u.id).toString() === userId.toString());
@@ -412,7 +411,7 @@ const updateVipStatus = async (req, res) => {
 
     return res.json({
       success: true,
-      message: `🎉 VIP Subscription active: ${chosenPlan}`,
+      ...(dbWriteFailed ? { dbWriteFailed: true, message: `Saved temporarily in memory — database write failed` } : { message: `🎉 VIP Subscription active: ${chosenPlan}` }),
       user: {
         id: updatedUser._id,
         _id: updatedUser._id,

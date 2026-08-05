@@ -15,7 +15,7 @@ const getAdminStats = async (req, res) => {
       dbProducts = await Product.find({});
       dbUsers = await User.find({}).select('-password');
     } catch (dbErr) {
-      console.warn('MongoDB query for admin stats:', dbErr.message);
+      console.error('[DB READ FAILED] getAdminStats:', dbErr.message);
     }
 
     // Merge DB users with memoryUsers (deduplicate by email)
@@ -82,7 +82,9 @@ const getAdminUsers = async (req, res) => {
     let dbUsers = [];
     try {
       dbUsers = await User.find({}).select('-password');
-    } catch (err) {}
+    } catch (err) {
+      console.error('[DB READ FAILED] getAdminUsers:', err.message);
+    }
 
     const userMap = new Map();
     (dbUsers || []).forEach((u) => {
